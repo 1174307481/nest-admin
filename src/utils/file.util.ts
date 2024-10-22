@@ -79,10 +79,11 @@ export async function saveLocalFile(buffer: Buffer, name: string, currentDate: s
     // 没有该文件夹就创建
     await fs.promises.mkdir(filePath, { recursive: true })
   }
-  const writeStream = fs.createWriteStream(filePath + name)
-  writeStream.write(buffer)
-}
 
+  const fullPath = path.join(filePath, name)
+  await fs.promises.writeFile(fullPath, buffer)
+  return fullPath
+}
 export async function saveFile(file: MultipartFile, name: string) {
   const filePath = path.join(__dirname, '../../', 'public/upload', name)
   const writeStream = fs.createWriteStream(filePath)

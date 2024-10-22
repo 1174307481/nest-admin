@@ -1,3 +1,4 @@
+import * as fs from 'node:fs'
 import { MultipartFile } from '@fastify/multipart'
 import { Injectable, NotFoundException } from '@nestjs/common'
 import { InjectRepository } from '@nestjs/typeorm'
@@ -7,6 +8,8 @@ import { Repository } from 'typeorm'
 
 import { Storage } from '~/modules/tools/storage/storage.entity'
 
+import { MinioService } from '~/shared/minio/minio.service'
+
 import {
   fileRename,
   getExtname,
@@ -14,13 +17,14 @@ import {
   getFileType,
   getSize,
   saveLocalFile,
-} from '~/utils/file.util'
+} from '~/utils/file.util' // 导入MinioService
 
 @Injectable()
 export class UploadService {
   constructor(
     @InjectRepository(Storage)
     private storageRepository: Repository<Storage>,
+    private readonly minioService: MinioService, // 注入MinioService
   ) {}
 
   /**
@@ -36,20 +40,28 @@ export class UploadService {
     const type = getFileType(extName)
     const name = fileRename(fileName)
     const currentDate = dayjs().format('YYYY-MM-DD')
-    const path = getFilePath(name, currentDate, type)
+    const filePath = getFilePath(name, currentDate, type)
 
-    saveLocalFile(await file.toBuffer(), name, currentDate, type)
+    const buffer = await file.toBuffer()
+    const tempFilePath = await saveLocalFile(buffer, name, currentDate, type)
 
+    // 将文件上传到MinIO
+    const { fileUrl } = await this.minioService.uploadImage('wallpaper', name, tempFilePath)
+
+    // 删除临时文件
+    await fs.promises.unlink(tempFilePath)
+
+    // 保存文件记录到数据库
     await this.storageRepository.save({
       name,
       fileName,
       extName,
-      path,
+      path: fileUrl,
       type,
       size,
       userId,
     })
 
-    return path
+    return filePath
   }
 }

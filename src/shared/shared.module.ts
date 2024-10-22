@@ -9,8 +9,8 @@ import { isDev } from '~/global/env'
 import { HelperModule } from './helper/helper.module'
 import { LoggerModule } from './logger/logger.module'
 import { MailerModule } from './mailer/mailer.module'
-
-import { RedisModule } from './redis/redis.module'
+import { MinioModule } from './minio/minio.module'
+import { RedisModule } from './redis/redis.module' // 导入MinioModule
 
 @Global()
 @Module({
@@ -43,7 +43,9 @@ import { RedisModule } from './redis/redis.module'
     MailerModule,
     // helper
     HelperModule,
+    // minio
+    MinioModule, // 注册MinioModule
   ],
-  exports: [HttpModule, MailerModule, RedisModule, HelperModule],
+  exports: [HttpModule, MailerModule, RedisModule, HelperModule, MinioModule], // 导出MinioModule
 })
 export class SharedModule {}
