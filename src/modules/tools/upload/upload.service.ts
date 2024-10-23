@@ -4,12 +4,13 @@ import { Injectable, NotFoundException } from '@nestjs/common'
 import { InjectRepository } from '@nestjs/typeorm'
 import dayjs from 'dayjs'
 import { isNil } from 'lodash'
+
 import { Repository } from 'typeorm'
 
 import { Storage } from '~/modules/tools/storage/storage.entity'
 
-import { MinioService } from '~/shared/minio/minio.service'
-
+import { MinioService } from '~/shared/minio/minio.service' // 导入MinioService
+import { generateUUID } from '~/utils'
 import {
   fileRename,
   getExtname,
@@ -17,7 +18,7 @@ import {
   getFileType,
   getSize,
   saveLocalFile,
-} from '~/utils/file.util' // 导入MinioService
+} from '~/utils/file.util'
 
 @Injectable()
 export class UploadService {
@@ -45,8 +46,11 @@ export class UploadService {
     const buffer = await file.toBuffer()
     const tempFilePath = await saveLocalFile(buffer, name, currentDate, type)
 
+    // 生成UUID并拼接文件扩展名作为objectName
+    const objectName = `${generateUUID()}.${extName}`
+
     // 将文件上传到MinIO
-    const { fileUrl } = await this.minioService.uploadImage('wallpaper', name, tempFilePath)
+    const { fileUrl } = await this.minioService.uploadImage('wallpaper', objectName, tempFilePath)
 
     // 删除临时文件
     await fs.promises.unlink(tempFilePath)
@@ -60,6 +64,7 @@ export class UploadService {
       type,
       size,
       userId,
+      objectName,
     })
 
     return filePath

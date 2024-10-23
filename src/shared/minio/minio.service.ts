@@ -23,7 +23,6 @@ export class MinioService {
 
     try {
       const etag = await this.minioClient.fPutObject(bucketName, objectName, filePath)
-      console.log('etag', etag, bucketName, objectName, filePath)
 
       const protocol = minioConfig.useSSL ? 'https' : 'http'
       const fileUrl = `${protocol}://${minioConfig.endPoint}:${minioConfig.port}/${bucketName}/${objectName}`
@@ -31,6 +30,17 @@ export class MinioService {
     }
     catch (err) {
       console.error('Error uploading image to MinIO:', err)
+      throw err
+    }
+  }
+
+  async deleteImage(bucketName: string, objectName: string) {
+    try {
+      await this.minioClient.removeObject(bucketName, objectName)
+      console.log(`Deleted ${objectName} from ${bucketName}`)
+    }
+    catch (err) {
+      console.error('Error deleting image from MinIO:', err)
       throw err
     }
   }

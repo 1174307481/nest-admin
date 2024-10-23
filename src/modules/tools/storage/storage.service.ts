@@ -7,10 +7,11 @@ import { PaginationTypeEnum } from '~/helper/paginate/interface'
 import { Pagination } from '~/helper/paginate/pagination'
 import { Storage } from '~/modules/tools/storage/storage.entity'
 import { UserEntity } from '~/modules/user/user.entity'
-import { deleteFile } from '~/utils'
+import { MinioService } from '~/shared/minio/minio.service'
 
+import { deleteFile } from '~/utils'
 import { StorageCreateDto, StoragePageDto } from './storage.dto'
-import { StorageInfo } from './storage.modal'
+import { StorageInfo } from './storage.modal' // 导入MinioService
 
 @Injectable()
 export class StorageService {
@@ -19,6 +20,7 @@ export class StorageService {
     private storageRepository: Repository<Storage>,
     @InjectRepository(UserEntity)
     private userRepository: Repository<UserEntity>,
+    private readonly minioService: MinioService, // 注入MinioService
   ) {}
 
   async create(dto: StorageCreateDto, userId: number): Promise<void> {
@@ -35,9 +37,17 @@ export class StorageService {
     const items = await this.storageRepository.findByIds(fileIds)
     await this.storageRepository.delete(fileIds)
 
-    items.forEach((el) => {
-      deleteFile(el.path)
-    })
+    for (const item of items) {
+      // 删除本地文件
+      deleteFile(item.path)
+
+      // 删除MinIO中的文件
+      const bucketName = 'wallpaper' // 假设所有文件都在同一个bucket中
+      const objectName = item.objectName // 使用objectName来删除文件
+      if (objectName) {
+        await this.minioService.deleteImage(bucketName, objectName)
+      }
+    }
   }
 
   async list({
