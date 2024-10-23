@@ -194,9 +194,14 @@ pnpm migration:revert
 # 部署补充
 ## minio docker
 ``` sh
+# mac
 docker run -p 9000:9000 -p 9001:9001 --name minio \
   -e "MINIO_ROOT_USER=YOUR_ACCESS_KEY" \
   -e "MINIO_ROOT_PASSWORD=YOUR_SECRET_KEY" \
   -v /mnt/data:/data \
   -v /mnt/config:/root/.minio \
   minio/minio server /data --console-address ":9001"
+
+# window
+docker run -p 9000:9000 -p 9001:9001 --name minio   -e "MINIO_ROOT_USER=YOUR_ACCESS_KEY"   -e "MINIO_ROOT_PASSWORD=YOUR_SECRET_KEY"   -v C:\minio-data:/data  -v C:\minio-config:/root/.minio  minio/minio server /data --console-address ":9001"
+```
