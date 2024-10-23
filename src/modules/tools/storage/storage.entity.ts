@@ -37,4 +37,7 @@ export class Storage extends CommonEntity {
   @Column({ nullable: true, name: 'user_id' })
   @ApiProperty({ description: '用户ID' })
   userId: number
+
+  @Column()
+  objectName: string // 添加objectName字段
 }

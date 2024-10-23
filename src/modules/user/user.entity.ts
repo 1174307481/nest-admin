@@ -11,22 +11,20 @@ import {
 } from 'typeorm'
 
 import { CommonEntity } from '~/common/entity/common.entity'
-
 import { AccessTokenEntity } from '~/modules/auth/entities/access-token.entity'
-
 import { DeptEntity } from '~/modules/system/dept/dept.entity'
 import { RoleEntity } from '~/modules/system/role/role.entity'
 
 @Entity({ name: 'sys_user' })
 export class UserEntity extends CommonEntity {
-  @Column({ unique: true })
+  @Column({ unique: true, nullable: true })
   username: string
 
   @Exclude()
-  @Column()
+  @Column({ nullable: true })
   password: string
 
-  @Column({ length: 32 })
+  @Column({ length: 32, nullable: true })
   psalt: string
 
   @Column({ nullable: true })
@@ -49,6 +47,12 @@ export class UserEntity extends CommonEntity {
 
   @Column({ type: 'tinyint', nullable: true, default: 1 })
   status: number
+
+  @Column({ unique: true, nullable: true })
+  wechatOpenId: string
+
+  @Column({ unique: true, nullable: true })
+  douyinOpenId: string
 
   @ManyToMany(() => RoleEntity, role => role.users)
   @JoinTable({
