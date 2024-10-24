@@ -4,7 +4,7 @@ import { In, Repository } from 'typeorm'
 import { DeptEntity } from '~/modules/system/dept/dept.entity'
 import { RoleEntity } from '~/modules/system/role/role.entity'
 import { UserEntity } from '~/modules/user/user.entity'
-import { md5, randomValue } from '~/utils'
+import { md5 } from '~/utils'
 
 @Injectable()
 export class AppUserService {
@@ -27,7 +27,7 @@ export class AppUserService {
     const newUser = this.userRepository.create({
       wechatOpenId: openid,
       username: `wechat_${openid}`,
-      password: md5(`${randomValue(32)}`),
+      password: md5(`${123456}`),
       roles: await this.roleRepository.findBy({ id: In([2]) }),
       dept: await DeptEntity.findOneBy({ id: 8 }),
     })
@@ -38,7 +38,7 @@ export class AppUserService {
     const newUser = this.userRepository.create({
       douyinOpenId: openid,
       username: `douyin_${openid}`,
-      password: md5(`${randomValue(32)}`),
+      password: md5(`${123456}`),
       roles: await this.roleRepository.findBy({ id: In([2]) }),
       dept: await DeptEntity.findOneBy({ id: 8 }),
     })

@@ -13,4 +13,4 @@ import { AppUserService } from './user.service'
   providers: [AppUserService],
   exports: [AppUserService], // 如果需要在其他模块中使用AppUserService，可以导出它
 })
-export class UserModule {}
+export class AppUserModule {}

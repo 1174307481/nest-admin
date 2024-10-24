@@ -3,7 +3,6 @@ import { ApiOperation } from '@nestjs/swagger'
 import { Perm } from '~/modules/auth/decorators/permission.decorator'
 import { AuthUser } from '../../../modules/auth/decorators/auth-user.decorator'
 import { permissions } from '../upload/upload.controller'
-import { UploadService } from '../upload/upload.service'
 import { CreatePictureDto } from './dto/create-picture.dto'
 import { PicturePageDto } from './dto/picture-page.dto'
 import { UpdatePictureDto } from './dto/update-picture.dto'
@@ -13,7 +12,6 @@ import { PictureService } from './picture.service'
 export class PictureController {
   constructor(
     private readonly pictureService: PictureService,
-    private readonly uploadService: UploadService,
   ) {}
 
   @Post()
