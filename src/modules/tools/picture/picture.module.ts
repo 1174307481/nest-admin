@@ -4,12 +4,14 @@ import { TypeOrmModule } from '@nestjs/typeorm'
 import { Storage } from '../storage/storage.entity'
 
 import { StorageModule } from '../storage/storage.module'
+import { UploadModule } from '../upload/upload.module'
 import { PictureController } from './picture.controller'
 import { Picture } from './picture.entity'
 import { PictureService } from './picture.service'
 
 @Module({
   imports: [
+    UploadModule,
     forwardRef(() => StorageModule),
     TypeOrmModule.forFeature([Picture, Storage]),
   ],

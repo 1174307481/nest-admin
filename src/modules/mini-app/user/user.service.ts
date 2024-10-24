@@ -4,7 +4,7 @@ import { In, Repository } from 'typeorm'
 import { DeptEntity } from '~/modules/system/dept/dept.entity'
 import { RoleEntity } from '~/modules/system/role/role.entity'
 import { UserEntity } from '~/modules/user/user.entity'
-import { md5 } from '~/utils'
+import { generateShortUUID, md5 } from '~/utils'
 
 @Injectable()
 export class AppUserService {
@@ -26,7 +26,7 @@ export class AppUserService {
   async createUserWithWechatOpenId(openid: string): Promise<UserEntity> {
     const newUser = this.userRepository.create({
       wechatOpenId: openid,
-      username: `wechat_${openid}`,
+      username: `wechat_${generateShortUUID()}`,
       password: md5(`${123456}`),
       roles: await this.roleRepository.findBy({ id: In([2]) }),
       dept: await DeptEntity.findOneBy({ id: 8 }),

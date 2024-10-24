@@ -1,10 +1,11 @@
 import { Injectable } from '@nestjs/common'
 import { InjectRepository } from '@nestjs/typeorm'
-import { Between, Like, Repository } from 'typeorm'
+import { Like, Repository } from 'typeorm'
 import { paginateRaw } from '~/helper/paginate'
 import { PaginationTypeEnum } from '~/helper/paginate/interface'
 import { Pagination } from '~/helper/paginate/pagination'
 import { Storage } from '../storage/storage.entity'
+import { UploadService } from '../upload/upload.service'
 import { CreatePictureDto } from './dto/create-picture.dto'
 import { PicturePageDto } from './dto/picture-page.dto'
 import { UpdatePictureDto } from './dto/update-picture.dto'
@@ -16,19 +17,20 @@ export class PictureService {
     @InjectRepository(Picture)
     private pictureRepository: Repository<Picture>,
     @InjectRepository(Storage)
-    private storageRepository: Repository<Storage>,
+      private storageRepository: Repository<Storage>,
+    private readonly uploadService: UploadService,
   ) {}
 
-  async create(createPictureDto: CreatePictureDto): Promise<Picture> {
-    const storage = await this.storageRepository.findOne({ where: { id: createPictureDto.fileId } })
-    if (!storage) {
+  async create(createPictureDto: CreatePictureDto, user: IAuthUser): Promise<Picture> {
+    const file = await this.uploadService.saveFile(createPictureDto.file, user.uid)
+    if (!file) {
       throw new Error('文件不存在')
     }
 
     const picture = this.pictureRepository.create({
       category: createPictureDto.category,
       description: createPictureDto.description,
-      storage,
+      storage: file,
     })
     return await this.pictureRepository.save(picture)
   }
@@ -75,9 +77,7 @@ export class PictureService {
       .where({
         ...(category && { category: Like(`%${category}%`) }),
         ...(description && { description: Like(`%${description}%`) }),
-        ...(time && { createdAt: Between(time[0], time[1]) }),
       })
-      .orderBy('picture.createdAt', 'DESC')
 
     const { items, ...rest } = await paginateRaw<Picture>(queryBuilder, {
       page,

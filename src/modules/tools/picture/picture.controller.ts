@@ -1,5 +1,6 @@
-import { BadRequestException, Body, Controller, Delete, Get, Param, Post, Put, Query } from '@nestjs/common'
-import { ApiOperation } from '@nestjs/swagger'
+import { BadRequestException, Body, Controller, Delete, Get, Param, Post, Put, Query, Req } from '@nestjs/common'
+import { ApiBody, ApiConsumes, ApiOperation } from '@nestjs/swagger'
+import { FastifyRequest } from 'fastify'
 import { Perm } from '~/modules/auth/decorators/permission.decorator'
 import { AuthUser } from '../../../modules/auth/decorators/auth-user.decorator'
 import { permissions } from '../upload/upload.controller'
@@ -8,21 +9,37 @@ import { PicturePageDto } from './dto/picture-page.dto'
 import { UpdatePictureDto } from './dto/update-picture.dto'
 import { PictureService } from './picture.service'
 
-@Controller('pictures')
+@Controller('picture')
 export class PictureController {
   constructor(
     private readonly pictureService: PictureService,
   ) {}
 
-  @Post()
+  @Post('upload')
   @Perm(permissions.UPLOAD)
-  @ApiOperation({ summary: '保存图片信息' })
+  @ApiOperation({ summary: '上传图片' })
+  @ApiConsumes('multipart/form-data')
+  @ApiBody({
+    type: CreatePictureDto,
+  })
   async create(
+    @Req() req: FastifyRequest,
     @AuthUser() user: IAuthUser,
-    @Body() createPictureDto: CreatePictureDto,
   ) {
+    if (!req.isMultipart())
+      throw new BadRequestException('Request is not multipart')
+    const file = await req.file()
+    const query: any = await req.query // 获取其他的formData信息
+
+    const params = {
+      file,
+      description: query.description as string,
+      category: query.category as string,
+    } as CreatePictureDto
+    console.log(params)
+
     try {
-      return await this.pictureService.create(createPictureDto)
+      return await this.pictureService.create(params, user)
     }
     catch (error) {
       console.log(error)
@@ -47,7 +64,7 @@ export class PictureController {
     return await this.pictureService.findOne(+id)
   }
 
-  @Get()
+  @Get('list')
   async list(@Query() pageDto: PicturePageDto) {
     return await this.pictureService.list(pageDto)
   }

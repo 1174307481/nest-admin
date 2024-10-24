@@ -31,7 +31,7 @@ export class UploadService {
   /**
    * 保存文件上传记录
    */
-  async saveFile(file: MultipartFile, userId: number): Promise<string> {
+  async saveFile(file: MultipartFile, userId: number): Promise<Storage> {
     if (isNil(file))
       throw new NotFoundException('Have not any file to upload!')
 
@@ -56,7 +56,7 @@ export class UploadService {
     await fs.promises.unlink(tempFilePath)
 
     // 保存文件记录到数据库
-    await this.storageRepository.save({
+    const storage = await this.storageRepository.save({
       name,
       fileName,
       extName,
@@ -67,6 +67,6 @@ export class UploadService {
       objectName,
     })
 
-    return filePath
+    return storage
   }
 }

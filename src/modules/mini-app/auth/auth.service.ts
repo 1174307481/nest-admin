@@ -23,7 +23,7 @@ export class AppAuthService {
     private readonly appUserService: AppUserService,
   ) {}
 
-  async wechatLogin(jsCode: string): Promise<{ user: UserEntity, token: string }> {
+  async wechatLogin(jsCode: string): Promise<{ user: UserEntity, accessToken: string }> {
     const appId = 'wx3a939ab0dd34e12d'
     const appSecret = 'ccb3dd4d35ec078982c2001740fe3bb6'
     const url = `https://api.weixin.qq.com/sns/jscode2session?appid=${appId}&secret=${appSecret}&js_code=${jsCode}&grant_type=authorization_code`
@@ -41,7 +41,7 @@ export class AppAuthService {
     }
 
     const { accessToken } = await this.tokenService.generateAccessToken(user.id)
-    return { user, token: accessToken }
+    return { user, accessToken }
   }
 
   async douyinLogin(jsCode: string): Promise<{ user: UserEntity, token: string }> {
