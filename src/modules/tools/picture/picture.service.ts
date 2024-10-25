@@ -4,12 +4,13 @@ import { Like, Repository } from 'typeorm'
 import { paginateRaw } from '~/helper/paginate'
 import { PaginationTypeEnum } from '~/helper/paginate/interface'
 import { Pagination } from '~/helper/paginate/pagination'
+import { CategoryEntity } from '../../system/category/category.entity'
 import { Storage } from '../storage/storage.entity'
 import { UploadService } from '../upload/upload.service'
 import { CreatePictureDto } from './dto/create-picture.dto'
 import { PicturePageDto } from './dto/picture-page.dto'
 import { UpdatePictureDto } from './dto/update-picture.dto'
-import { Picture } from './picture.entity'
+import { Picture } from './picture.entity' // 导入 CategoryEntity
 
 @Injectable()
 export class PictureService {
@@ -17,7 +18,9 @@ export class PictureService {
     @InjectRepository(Picture)
     private pictureRepository: Repository<Picture>,
     @InjectRepository(Storage)
-      private storageRepository: Repository<Storage>,
+    private storageRepository: Repository<Storage>,
+    @InjectRepository(CategoryEntity) // 注入 CategoryEntity 的 Repository
+    private categoryRepository: Repository<CategoryEntity>,
     private readonly uploadService: UploadService,
   ) {}
 
@@ -27,8 +30,13 @@ export class PictureService {
       throw new Error('文件不存在')
     }
 
+    const category = await this.categoryRepository.findOne({ where: { id: createPictureDto.categoryId } })
+    if (!category) {
+      throw new Error('分类不存在')
+    }
+
     const picture = this.pictureRepository.create({
-      category: createPictureDto.category,
+      category,
       description: createPictureDto.description,
       storage: file,
     })
@@ -49,8 +57,12 @@ export class PictureService {
       picture.storage = storage
     }
 
-    if (updatePictureDto.category) {
-      picture.category = updatePictureDto.category
+    if (updatePictureDto.categoryId) {
+      const category = await this.categoryRepository.findOne({ where: { id: updatePictureDto.categoryId } })
+      if (!category) {
+        throw new Error('分类不存在')
+      }
+      picture.category = category
     }
 
     if (updatePictureDto.description) {
@@ -68,12 +80,13 @@ export class PictureService {
     return this.pictureRepository.findOne({ where: { id } })
   }
 
-  async list(pageDto: PicturePageDto): Promise<Pagination<Picture>> {
+  async list(pageDto: PicturePageDto): Promise<Pagination<Picture >> {
     const { page, pageSize, category, description, time } = pageDto
 
     const queryBuilder = this.pictureRepository
       .createQueryBuilder('picture')
       .leftJoinAndSelect('picture.storage', 'storage')
+      .leftJoinAndSelect('picture.category', 'category') // 加入分类关联
       .where({
         ...(category && { category: Like(`%${category}%`) }),
         ...(description && { description: Like(`%${description}%`) }),
@@ -85,8 +98,11 @@ export class PictureService {
       paginationType: PaginationTypeEnum.LIMIT_AND_OFFSET,
     })
 
+    // 将分类名称添加到每个图片对象中
+    const itemsWithCategoryName = items
+
     return {
-      items,
+      items: itemsWithCategoryName,
       ...rest,
     }
   }

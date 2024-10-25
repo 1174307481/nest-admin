@@ -30,4 +30,6 @@ export class CreatePictureDto {
 
   @IsString()
   description: string
+
+  categoryId: number // 使用 categoryId
 }

@@ -1,76 +1,59 @@
-import { BadRequestException, Body, Controller, Delete, Get, Param, Post, Put, Query, Req } from '@nestjs/common'
-import { ApiBody, ApiConsumes, ApiOperation } from '@nestjs/swagger'
-import { FastifyRequest } from 'fastify'
-import { Perm } from '~/modules/auth/decorators/permission.decorator'
-import { AuthUser } from '../../../modules/auth/decorators/auth-user.decorator'
-import { permissions } from '../upload/upload.controller'
+import { Body, Controller, Delete, Get, Param, Post, Put, Query, UseGuards } from '@nestjs/common'
+import { ApiOperation, ApiTags } from '@nestjs/swagger'
+import { AuthUser } from '~/modules/auth/decorators/auth-user.decorator'
+import { Permissions } from '~/modules/auth/decorators/permissions.decorator'
+import { RbacGuard } from '~/modules/auth/guards/rbac.guard'
 import { CreatePictureDto } from './dto/create-picture.dto'
 import { PicturePageDto } from './dto/picture-page.dto'
 import { UpdatePictureDto } from './dto/update-picture.dto'
 import { PictureService } from './picture.service'
 
+@ApiTags('Tools - 图片模块')
 @Controller('picture')
+@UseGuards(RbacGuard)
 export class PictureController {
-  constructor(
-    private readonly pictureService: PictureService,
-  ) {}
+  constructor(private readonly pictureService: PictureService) {}
 
   @Post('upload')
-  @Perm(permissions.UPLOAD)
+  @Permissions('picture:upload')
   @ApiOperation({ summary: '上传图片' })
-  @ApiConsumes('multipart/form-data')
-  @ApiBody({
-    type: CreatePictureDto,
-  })
-  async create(
-    @Req() req: FastifyRequest,
-    @AuthUser() user: IAuthUser,
-  ) {
-    if (!req.isMultipart())
-      throw new BadRequestException('Request is not multipart')
-    const file = await req.file()
-    const query: any = await req.query // 获取其他的formData信息
-
-    const params = {
-      file,
-      description: query.description as string,
-      category: query.category as string,
-    } as CreatePictureDto
-    console.log(params)
-
-    try {
-      return await this.pictureService.create(params, user)
-    }
-    catch (error) {
-      console.log(error)
-      throw new BadRequestException('保存图片信息失败')
-    }
+  async create(@Body() createPictureDto: CreatePictureDto, @AuthUser() user: IAuthUser) {
+    return this.pictureService.create(createPictureDto, user)
   }
 
   @Put(':id')
+  @Permissions('picture:update')
+  @ApiOperation({ summary: '更新图片' })
   async update(@Param('id') id: string, @Body() updatePictureDto: UpdatePictureDto) {
-    return await this.pictureService.update(+id, updatePictureDto)
+    return this.pictureService.update(+id, updatePictureDto)
   }
 
   @Delete(':ids')
+  @Permissions('picture:delete')
+  @ApiOperation({ summary: '删除图片' })
   async delete(@Param('ids') ids: string) {
     const pictureIds = ids.split(',').map(id => +id)
-    await this.pictureService.delete(pictureIds)
-    return { success: true }
+    return this.pictureService.delete(pictureIds)
   }
 
   @Get(':id')
+  @Permissions('picture:read')
+  @ApiOperation({ summary: '获取图片信息' })
   async findOne(@Param('id') id: string) {
-    return await this.pictureService.findOne(+id)
+    return this.pictureService.findOne(+id)
   }
 
   @Get('list')
+  @Permissions('picture:list')
+  @ApiOperation({ summary: '获取图片列表' })
   async list(@Query() pageDto: PicturePageDto) {
-    return await this.pictureService.list(pageDto)
+    return this.pictureService.list(pageDto)
   }
 
   @Get('count')
+  @Permissions('picture:count')
+  @ApiOperation({ summary: '获取图片数量' })
   async count() {
-    return await this.pictureService.count()
+    return this.pictureService.count()
   }
 }

@@ -4,13 +4,8 @@ import {
   Injectable,
 } from '@nestjs/common'
 import { Reflector } from '@nestjs/core'
-import { FastifyRequest } from 'fastify'
-
-import { BusinessException } from '~/common/exceptions/biz.exception'
-import { ErrorEnum } from '~/constants/error-code.constant'
 import { AuthService } from '~/modules/auth/auth.service'
-
-import { ALLOW_ANON_KEY, PERMISSION_KEY, PUBLIC_KEY, Roles } from '../auth.constant'
+import { PERMISSION_KEY } from '~/modules/auth/decorators/permissions.decorator'
 
 @Injectable()
 export class RbacGuard implements CanActivate {
@@ -19,57 +14,26 @@ export class RbacGuard implements CanActivate {
     private authService: AuthService,
   ) {}
 
-  async canActivate(context: ExecutionContext): Promise<any> {
-    const isPublic = this.reflector.getAllAndOverride<boolean>(PUBLIC_KEY, [
-      context.getHandler(),
-      context.getClass(),
-    ])
-
-    if (isPublic)
-      return true
-
-    const request = context.switchToHttp().getRequest<FastifyRequest>()
-
-    const { user } = request
-    if (!user)
-      throw new BusinessException(ErrorEnum.INVALID_LOGIN)
-
-    // allowAnon 是需要登录后可访问(无需权限), Public 则是无需登录也可访问.
-    const allowAnon = this.reflector.get<boolean>(
-      ALLOW_ANON_KEY,
-      context.getHandler(),
+  async canActivate(context: ExecutionContext): Promise<boolean> {
+    const requiredPermissions = this.reflector.getAllAndOverride<string[]>(
+      PERMISSION_KEY,
+      [context.getHandler(), context.getClass()],
     )
-    if (allowAnon)
-      return true
 
-    const payloadPermission = this.reflector.getAllAndOverride<
-      string | string[]
-    >(PERMISSION_KEY, [context.getHandler(), context.getClass()])
-
-    // 控制器没有设置接口权限，则默认通过
-    if (!payloadPermission)
-      return true
-
-    // 管理员放开所有权限
-    if (user.roles.includes(Roles.ADMIN))
-      return true
-
-    const allPermissions = await this.authService.getPermissionsCache(user.uid) ?? await this.authService.getPermissions(user.uid)
-    // console.log(allPermissions)
-    let canNext = false
-
-    // handle permission strings
-    if (Array.isArray(payloadPermission)) {
-      // 只要有一个权限满足即可
-      canNext = payloadPermission.every(i => allPermissions.includes(i))
+    if (!requiredPermissions) {
+      return true // 如果没有设置权限要求，则默认通过
     }
 
-    if (typeof payloadPermission === 'string')
-      canNext = allPermissions.includes(payloadPermission)
+    const request = context.switchToHttp().getRequest()
+    const user = request.user
 
-    if (!canNext)
-      throw new BusinessException(ErrorEnum.NO_PERMISSION)
+    if (!user) {
+      return false // 如果没有用户信息，则拒绝访问
+    }
 
-    return true
+    const userPermissions = await this.authService.getPermissions(user.id)
+
+    // 检查用户是否具有所需的任何权限
+    return requiredPermissions.some(permission => userPermissions.includes(permission))
   }
 }

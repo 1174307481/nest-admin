@@ -1,8 +1,10 @@
 import { forwardRef, Module } from '@nestjs/common'
 import { TypeOrmModule } from '@nestjs/typeorm'
 
-import { Storage } from '../storage/storage.entity'
+import { AuthModule } from '~/modules/auth/auth.module'
 
+import { CategoryModule } from '~/modules/system/category/category.module'
+import { Storage } from '../storage/storage.entity'
 import { StorageModule } from '../storage/storage.module'
 import { UploadModule } from '../upload/upload.module'
 import { PictureController } from './picture.controller'
@@ -12,6 +14,8 @@ import { PictureService } from './picture.service'
 @Module({
   imports: [
     UploadModule,
+    CategoryModule,
+    AuthModule,
     forwardRef(() => StorageModule),
     TypeOrmModule.forFeature([Picture, Storage]),
   ],

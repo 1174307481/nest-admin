@@ -12,6 +12,7 @@ import {
 
 import { CommonEntity } from '~/common/entity/common.entity'
 import { AccessTokenEntity } from '~/modules/auth/entities/access-token.entity'
+import { UserFavorite } from '~/modules/mini-app/user-favorite/user-favorite.entity'
 import { DeptEntity } from '~/modules/system/dept/dept.entity'
 import { RoleEntity } from '~/modules/system/role/role.entity'
 
@@ -70,4 +71,7 @@ export class UserEntity extends CommonEntity {
     cascade: true,
   })
   accessTokens: Relation<AccessTokenEntity[]>
+
+  @OneToMany(() => UserFavorite, userFavorite => userFavorite.user)
+  favorites: Relation<UserFavorite[]>
 }

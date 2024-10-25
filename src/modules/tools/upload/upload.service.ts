@@ -1,6 +1,6 @@
 import * as fs from 'node:fs'
 import { MultipartFile } from '@fastify/multipart'
-import { Injectable, NotFoundException } from '@nestjs/common'
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common'
 import { InjectRepository } from '@nestjs/typeorm'
 import dayjs from 'dayjs'
 import { isNil } from 'lodash'
@@ -29,12 +29,26 @@ export class UploadService {
   ) {}
 
   /**
-   * 保存文件上传记录
+   * 检查文件格式并保存文件
    */
-  async saveFile(file: MultipartFile, userId: number): Promise<Storage> {
+  async uploadImage(file: MultipartFile, userId: number): Promise<Storage> {
     if (isNil(file))
       throw new NotFoundException('Have not any file to upload!')
 
+    const allowedFormats = ['jpg', 'jpeg', 'png', 'gif']
+    const extName = getExtname(file.filename).toLowerCase()
+
+    if (!allowedFormats.includes(extName)) {
+      throw new BadRequestException(`Unsupported file format: ${extName}. Allowed formats: ${allowedFormats.join(', ')}`)
+    }
+
+    return this.saveFile(file, userId)
+  }
+
+  /**
+   * 保存文件上传记录
+   */
+  async saveFile(file: MultipartFile, userId: number): Promise<Storage> {
     const fileName = file.filename
     const size = getSize(file.file.bytesRead)
     const extName = getExtname(fileName)

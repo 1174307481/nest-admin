@@ -16,4 +16,9 @@ export class UpdatePictureDto {
   @IsOptional()
   @ApiPropertyOptional({ description: '描述' })
   description?: string
+
+  @IsNumber()
+  @IsOptional()
+  @ApiPropertyOptional({ description: '分类ID' })
+  categoryId?: number // 使用 categoryId
 }
