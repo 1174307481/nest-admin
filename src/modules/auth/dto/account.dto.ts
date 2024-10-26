@@ -4,7 +4,6 @@ import {
   IsOptional,
   IsString,
   Matches,
-  MaxLength,
   MinLength,
 } from 'class-validator'
 
@@ -14,35 +13,31 @@ export class AccountUpdateDto {
   @ApiProperty({ description: '用户呢称' })
   @IsString()
   @IsOptional()
-  nickname: string
+  nickname?: string
 
   @ApiProperty({ description: '用户邮箱' })
-  @IsOptional()
   @IsEmail()
-  email: string
+  @IsOptional()
+  email?: string
 
   @ApiProperty({ description: '用户QQ' })
-  @IsOptional()
   @IsString()
-  @Matches(/^\d+$/)
-  @MinLength(5)
-  @MaxLength(11)
-  qq: string
+  @IsOptional()
+  qq?: string
 
   @ApiProperty({ description: '用户手机号' })
-  @IsOptional()
   @IsString()
-  phone: string
+  @IsOptional()
+  phone?: string
 
-  @ApiProperty({ description: '用户头像' })
+  @ApiProperty({ description: '用户头像ID' })
   @IsOptional()
-  @IsString()
-  avatar: string
+  avatarId?: number
 
   @ApiProperty({ description: '用户备注' })
-  @IsOptional()
   @IsString()
-  remark: string
+  @IsOptional()
+  remark?: string
 }
 
 export class ResetPasswordDto {

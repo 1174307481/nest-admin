@@ -4,7 +4,6 @@ import { RouterModule } from '@nestjs/core'
 
 import { UserModule } from '../user/user.module'
 
-import { CategoryModule } from './category/category.module'
 import { DeptModule } from './dept/dept.module'
 import { DictItemModule } from './dict-item/dict-item.module'
 import { DictTypeModule } from './dict-type/dict-type.module'
@@ -28,7 +27,7 @@ const modules = [
   TaskModule,
   OnlineModule,
   ServeModule,
-  CategoryModule,
+
 ]
 
 @Module({

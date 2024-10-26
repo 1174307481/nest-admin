@@ -7,14 +7,16 @@ import {
   ManyToMany,
   ManyToOne,
   OneToMany,
+  OneToOne,
   Relation,
 } from 'typeorm'
 
 import { CommonEntity } from '~/common/entity/common.entity'
 import { AccessTokenEntity } from '~/modules/auth/entities/access-token.entity'
-import { UserFavorite } from '~/modules/mini-app/user-favorite/user-favorite.entity'
 import { DeptEntity } from '~/modules/system/dept/dept.entity'
 import { RoleEntity } from '~/modules/system/role/role.entity'
+import { Storage } from '~/modules/tools/storage/storage.entity'
+import { Picture } from '../appManage/picture/picture.entity'
 
 @Entity({ name: 'sys_user' })
 export class UserEntity extends CommonEntity {
@@ -31,8 +33,9 @@ export class UserEntity extends CommonEntity {
   @Column({ nullable: true })
   nickname: string
 
-  @Column({ name: 'avatar', nullable: true })
-  avatar: string
+  @OneToOne(() => Storage)
+  @JoinColumn()
+  avatar: Storage
 
   @Column({ nullable: true })
   qq: string
@@ -72,6 +75,11 @@ export class UserEntity extends CommonEntity {
   })
   accessTokens: Relation<AccessTokenEntity[]>
 
-  @OneToMany(() => UserFavorite, userFavorite => userFavorite.user)
-  favorites: Relation<UserFavorite[]>
+  @ManyToMany(() => Picture, picture => picture.favoriteUsers)
+  @JoinTable({
+    name: 'user_favorite_pictures',
+    joinColumn: { name: 'user_id', referencedColumnName: 'id' },
+    inverseJoinColumn: { name: 'picture_id', referencedColumnName: 'id' },
+  })
+  favoritePictures: Relation<Picture[]>
 }

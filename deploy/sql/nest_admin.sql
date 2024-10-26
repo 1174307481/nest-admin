@@ -741,4 +741,12 @@ INSERT INTO `user_refresh_tokens` (`id`, `value`, `expired_at`, `created_at`, `a
 INSERT INTO `user_refresh_tokens` (`id`, `value`, `expired_at`, `created_at`, `accessTokenId`) VALUES ('f9a003e8-91b7-41ee-979e-e39cca3534ec', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1dWlkIjoiWGJQdl9SVjFtUl80N0o0TGF0QlV5IiwiaWF0IjoxNzA3NTA5MTU3fQ.oEVdWSigTpAQY7F8MlwBnedldH0sJT1YF1Mt0ZUbIw4', '2024-03-11 04:05:58', '2024-02-10 04:05:57.706763', '09cf7b0a-62e0-45ee-96b0-e31de32361e0');
 COMMIT;
 
+
+BEGIN;
+INSERT INTO wallpaper.sys_menu (parent_id,`path`,name,permission,`type`,icon,order_no,component,keep_alive,`show`,status,created_at,updated_at,is_ext,ext_open_mode,active_menu,create_by,update_by) VALUES
+	 (1,'/system/category','分类管理',NULL,1,'ant-design:aliwangwang-filled',255,'system/category/index',0,1,1,'2024-10-26 00:36:23.500401','2024-10-26 00:36:32',0,1,NULL,1,1),
+	 (48,'/tools/picture','图片管理',NULL,1,'ant-design:behance-square-outlined',255,'tool/picture/index',0,1,1,'2024-10-26 00:37:21.590216','2024-10-26 00:37:21.590216',0,1,NULL,1,NULL);
+
+COMMIT;
+
 SET FOREIGN_KEY_CHECKS = 1;

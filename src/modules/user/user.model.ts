@@ -1,4 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger'
+import { Storage } from '~/modules/tools/storage/storage.entity'
 
 export class AccountInfo {
   @ApiProperty({ description: '用户名' })
@@ -17,5 +18,5 @@ export class AccountInfo {
   remark: string
 
   @ApiProperty({ description: '头像' })
-  avatar: string
+  avatar: Storage
 }

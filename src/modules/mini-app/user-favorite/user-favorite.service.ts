@@ -1,33 +1,52 @@
 import { Injectable } from '@nestjs/common'
 import { InjectRepository } from '@nestjs/typeorm'
 import { Repository } from 'typeorm'
-import { Picture } from '~/modules/tools/picture/picture.entity'
+import { Picture } from '~/modules/appManage/picture/picture.entity'
 import { UserEntity } from '~/modules/user/user.entity'
-import { UserFavorite } from './user-favorite.entity'
 
 @Injectable()
 export class UserFavoriteService {
   constructor(
-    @InjectRepository(UserFavorite)
-    private userFavoriteRepository: Repository<UserFavorite>,
+    @InjectRepository(UserEntity)
+    private userRepository: Repository<UserEntity>,
+    @InjectRepository(Picture)
+    private pictureRepository: Repository<Picture>,
   ) {}
 
   async addFavorite(userId: number, pictureId: number): Promise<void> {
-    const userFavorite = this.userFavoriteRepository.create({
-      user: { id: userId } as UserEntity,
-      picture: { id: pictureId } as Picture,
+    const user = await this.userRepository.findOne({
+      where: { id: userId },
+      relations: ['favoritePictures'],
     })
-    await this.userFavoriteRepository.save(userFavorite)
+    const picture = await this.pictureRepository.findOne({
+      where: { id: pictureId },
+    })
+
+    if (user && picture) {
+      user.favoritePictures.push(picture)
+      await this.userRepository.save(user)
+    }
   }
 
   async removeFavorite(userId: number, pictureId: number): Promise<void> {
-    await this.userFavoriteRepository.delete({ user: { id: userId }, picture: { id: pictureId } })
+    const user = await this.userRepository.findOne({
+      where: { id: userId },
+      relations: ['favoritePictures'],
+    })
+
+    if (user) {
+      user.favoritePictures = user.favoritePictures.filter(
+        picture => picture.id !== pictureId,
+      )
+      await this.userRepository.save(user)
+    }
   }
 
-  async getUserFavorites(userId: number): Promise<UserFavorite[]> {
-    return this.userFavoriteRepository.find({
-      where: { user: { id: userId } },
-      relations: ['picture'],
+  async getUserFavorites(userId: number): Promise<Picture[]> {
+    const user = await this.userRepository.findOne({
+      where: { id: userId },
+      relations: ['favoritePictures'],
     })
+    return user ? user.favoritePictures : []
   }
 }

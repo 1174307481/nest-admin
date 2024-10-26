@@ -7,6 +7,7 @@ import {
   IsEmail,
   IsIn,
   IsInt,
+  IsNumber,
   IsOptional,
   IsString,
   Matches,
@@ -23,6 +24,11 @@ export class UserDto {
   @IsOptional()
   @IsString()
   avatar?: string
+
+  @ApiProperty({ description: '头像ID' })
+  @IsNumber()
+  @IsOptional()
+  avatarId?: number
 
   @ApiProperty({ description: '登录账号', example: 'admin' })
   @IsString()
@@ -83,7 +89,12 @@ export class UserDto {
   status: number
 }
 
-export class UserUpdateDto extends PartialType(UserDto) {}
+export class UserUpdateDto extends PartialType(UserDto) {
+  @ApiProperty({ description: '头像ID' })
+  @IsNumber()
+  @IsOptional()
+  avatarId?: number
+}
 
 export class UserQueryDto extends IntersectionType(PagerDto<UserDto>, PartialType(UserDto)) {
   @ApiProperty({ description: '归属大区', example: 1, required: false })

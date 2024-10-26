@@ -10,7 +10,7 @@ import { Repository } from 'typeorm'
 import { Storage } from '~/modules/tools/storage/storage.entity'
 
 import { MinioService } from '~/shared/minio/minio.service' // 导入MinioService
-import { generateUUID } from '~/utils'
+import { generateShortUUID } from '~/utils'
 import {
   fileRename,
   getExtname,
@@ -61,7 +61,7 @@ export class UploadService {
     const tempFilePath = await saveLocalFile(buffer, name, currentDate, type)
 
     // 生成UUID并拼接文件扩展名作为objectName
-    const objectName = `${generateUUID()}.${extName}`
+    const objectName = `${generateShortUUID()}.${extName}`
 
     // 将文件上传到MinIO
     const { fileUrl } = await this.minioService.uploadImage('wallpaper', objectName, tempFilePath)

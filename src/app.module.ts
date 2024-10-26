@@ -16,6 +16,7 @@ import { AllExceptionsFilter } from './common/filters/any-exception.filter'
 import { IdempotenceInterceptor } from './common/interceptors/idempotence.interceptor'
 import { TimeoutInterceptor } from './common/interceptors/timeout.interceptor'
 import { TransformInterceptor } from './common/interceptors/transform.interceptor'
+import { appManageModule } from './modules/appManage/appManage.module'
 import { AuthModule } from './modules/auth/auth.module'
 import { JwtAuthGuard } from './modules/auth/guards/jwt-auth.guard'
 import { RbacGuard } from './modules/auth/guards/rbac.guard'
@@ -25,8 +26,8 @@ import { NetdiskModule } from './modules/netdisk/netdisk.module'
 import { SseModule } from './modules/sse/sse.module'
 import { SystemModule } from './modules/system/system.module'
 import { TasksModule } from './modules/tasks/tasks.module'
-import { TodoModule } from './modules/todo/todo.module'
 
+import { TodoModule } from './modules/todo/todo.module'
 import { ToolsModule } from './modules/tools/tools.module'
 import { DatabaseModule } from './shared/database/database.module'
 import { SocketModule } from './socket/socket.module'
@@ -67,7 +68,7 @@ import { SocketModule } from './socket/socket.module'
     HealthModule,
     SseModule,
     NetdiskModule,
-
+    appManageModule,
     // biz
 
     // end biz

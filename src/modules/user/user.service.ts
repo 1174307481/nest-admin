@@ -15,15 +15,16 @@ import { paginate } from '~/helper/paginate'
 import { Pagination } from '~/helper/paginate/pagination'
 import { AccountUpdateDto } from '~/modules/auth/dto/account.dto'
 import { RegisterDto } from '~/modules/auth/dto/auth.dto'
+import { Storage } from '~/modules/tools/storage/storage.entity'
+
 import { QQService } from '~/shared/helper/qq.service'
 
 import { md5, randomValue } from '~/utils'
-
 import { AccessTokenEntity } from '../auth/entities/access-token.entity'
 import { DeptEntity } from '../system/dept/dept.entity'
 import { ParamConfigService } from '../system/param-config/param-config.service'
-import { RoleEntity } from '../system/role/role.entity'
 
+import { RoleEntity } from '../system/role/role.entity'
 import { UserStatus } from './constant'
 import { PasswordUpdateDto } from './dto/password.dto'
 import { UserDto, UserQueryDto, UserUpdateDto } from './dto/user.dto'
@@ -39,6 +40,8 @@ export class UserService {
     private readonly userRepository: Repository<UserEntity>,
     @InjectRepository(RoleEntity)
     private readonly roleRepository: Repository<RoleEntity>,
+    @InjectRepository(Storage)
+    private readonly storageRepository: Repository<Storage>,
     @InjectEntityManager() private entityManager: EntityManager,
     private readonly paramConfigService: ParamConfigService,
     private readonly qqService: QQService,
@@ -91,19 +94,35 @@ export class UserService {
     if (isEmpty(user))
       throw new BusinessException(ErrorEnum.USER_NOT_FOUND)
 
-    const data = {
+    const data: any = {
       ...(info.nickname ? { nickname: info.nickname } : null),
-      ...(info.avatar ? { avatar: info.avatar } : null),
       ...(info.email ? { email: info.email } : null),
       ...(info.phone ? { phone: info.phone } : null),
       ...(info.qq ? { qq: info.qq } : null),
       ...(info.remark ? { remark: info.remark } : null),
     }
 
-    if (!info.avatar && info.qq) {
+    if (info.avatarId) {
+      const avatar = await this.storageRepository.findOne({ where: { id: info.avatarId } })
+      if (avatar) {
+        data.avatar = avatar
+      }
+      else {
+        throw new BusinessException('Avatar not found')
+      }
+    }
+
+    if (!info.avatarId && info.qq) {
       // 如果qq不等于原qq，则更新qq头像
-      if (info.qq !== user.qq)
-        data.avatar = await this.qqService.getAvater(info.qq)
+      if (info.qq !== user.qq) {
+        const avatarUrl = await this.qqService.getAvater(info.qq)
+        const avatar = await this.storageRepository.save({
+          path: avatarUrl,
+          name: `qq_avatar_${info.qq}`,
+          // ... 其他必要的字段
+        })
+        data.avatar = avatar
+      }
     }
 
     await this.userRepository.update(uid, data)
@@ -146,6 +165,7 @@ export class UserService {
     password,
     roleIds,
     deptId,
+    avatarId,
     ...data
   }: UserDto): Promise<void> {
     const exists = await this.userRepository.findOneBy({
@@ -166,6 +186,15 @@ export class UserService {
       else {
         password = md5(`${password ?? '123456'}${salt}`)
       }
+
+      let avatar = null
+      if (avatarId) {
+        avatar = await this.storageRepository.findOne({ where: { id: avatarId } })
+        if (!avatar) {
+          throw new Error('Avatar not found')
+        }
+      }
+
       const u = manager.create(UserEntity, {
         username,
         password,
@@ -173,6 +202,7 @@ export class UserService {
         psalt: salt,
         roles: await this.roleRepository.findBy({ id: In(roleIds) }),
         dept: await DeptEntity.findOneBy({ id: deptId }),
+        avatar,
       })
 
       const result = await manager.save(u)
@@ -185,15 +215,24 @@ export class UserService {
    */
   async update(
     id: number,
-    { password, deptId, roleIds, status, ...data }: UserUpdateDto,
+    { password, deptId, roleIds, status, avatarId, ...data }: UserUpdateDto,
   ): Promise<void> {
     await this.entityManager.transaction(async (manager) => {
       if (password)
         await this.forceUpdatePassword(id, password)
 
+      let avatar = null
+      if (avatarId) {
+        avatar = await this.storageRepository.findOne({ where: { id: avatarId } })
+        if (!avatar) {
+          throw new Error('Avatar not found')
+        }
+      }
+
       await manager.update(UserEntity, id, {
         ...data,
         status,
+        avatar,
       })
 
       const user = await this.userRepository
@@ -233,6 +272,7 @@ export class UserService {
       .createQueryBuilder('user')
       .leftJoinAndSelect('user.roles', 'roles')
       .leftJoinAndSelect('user.dept', 'dept')
+      .leftJoinAndSelect('user.avatar', 'avatar') // 添加这行来加载 avatar 关系
       .where('user.id = :id', { id })
       .getOne()
 
@@ -279,7 +319,7 @@ export class UserService {
       .createQueryBuilder('user')
       .leftJoinAndSelect('user.dept', 'dept')
       .leftJoinAndSelect('user.roles', 'role')
-      // .where('user.id NOT IN (:...ids)', { ids: [rootUserId, uid] })
+      .leftJoinAndSelect('user.avatar', 'avatar') // 添加这行来加载 avatar 关系
       .where({
         ...(username ? { username: Like(`%${username}%`) } : null),
         ...(nickname ? { nickname: Like(`%${nickname}%`) } : null),
