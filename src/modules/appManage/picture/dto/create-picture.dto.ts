@@ -1,6 +1,6 @@
 import { MultipartFile } from '@fastify/multipart'
 import { ApiProperty } from '@nestjs/swagger'
-import { IsDefined, IsNotEmpty, IsString } from 'class-validator'
+import { IsDefined, IsNumber, IsOptional, IsString } from 'class-validator'
 import { IsFile } from '~/modules/tools/upload/file.constraint'
 
 export class CreatePictureDto {
@@ -23,12 +23,12 @@ export class CreatePictureDto {
   )
   file: MultipartFile
 
+  @ApiProperty({ description: '图片描述' })
   @IsString()
-  @IsNotEmpty()
-  category: string
+  @IsOptional()
+  description?: string
 
-  @IsString()
-  description: string
-
-  categoryId: number // 使用 categoryId
+  @ApiProperty({ description: '分类ID' })
+  @IsNumber()
+  categoryId: number
 }

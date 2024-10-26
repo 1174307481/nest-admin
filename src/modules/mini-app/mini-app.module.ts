@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common'
 import { RouterModule } from '@nestjs/core'
 import { AppAuthModule } from './appAuth/appAuth.module'
 import { AppCategoryModule } from './appCategory/appCategory.module'
+import { AppFeedbackModule } from './appFeedback/appFeedback.module'
 import { AppPictureModule } from './appPicture/appPicture.module'
 import { AppUserModule } from './appUser/appUser.module'
 import { HomeModule } from './home/home.module'
@@ -14,6 +15,7 @@ const modules = [
   HomeModule,
   AppPictureModule,
   AppCategoryModule,
+  AppFeedbackModule,
 ]
 
 @Module({

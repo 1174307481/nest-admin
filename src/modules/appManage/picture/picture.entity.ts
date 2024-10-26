@@ -3,7 +3,7 @@ import { Storage } from '~/modules/tools/storage/storage.entity'
 import { UserEntity } from '~/modules/user/user.entity'
 import { CategoryEntity } from '../../appManage/category/category.entity'
 
-@Entity()
+@Entity('picture')
 export class Picture {
   @PrimaryGeneratedColumn()
   id: number
@@ -12,15 +12,18 @@ export class Picture {
   name: string // 添加 name 字段
 
   @ManyToOne(() => Storage)
-  @JoinColumn({ name: 'storage_id' })
+  @JoinColumn()
   storage: Storage
 
   @ManyToOne(() => CategoryEntity)
-  @JoinColumn({ name: 'category_id' })
+  @JoinColumn()
   category: CategoryEntity
 
-  @Column()
+  @Column({ nullable: true })
   description: string
+
+  @Column({ type: 'tinyint', default: 0, comment: '审核状态: 0-待审核, 1-通过, 2-驳回' })
+  auditStatus: number
 
   @ManyToMany(() => UserEntity, user => user.favoritePictures)
   favoriteUsers: UserEntity[]

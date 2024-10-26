@@ -1,8 +1,24 @@
-import { Body, Controller, Delete, Get, Param, Post, Put, Query, UseGuards } from '@nestjs/common'
-import { ApiOperation, ApiTags } from '@nestjs/swagger'
+import {
+  BadRequestException,
+  Body,
+  Controller,
+  Delete,
+  Get,
+  Param,
+  Post,
+  Put,
+  Query,
+  Req,
+  UseGuards,
+} from '@nestjs/common'
+import { ApiBody, ApiConsumes, ApiOperation, ApiTags } from '@nestjs/swagger'
+import { FastifyRequest } from 'fastify'
 import { ApiSecurityAuth } from '~/common/decorators/swagger.decorator'
 import { AuthUser } from '~/modules/auth/decorators/auth-user.decorator'
-import { definePermission, Perm } from '~/modules/auth/decorators/permission.decorator'
+import {
+  definePermission,
+  Perm,
+} from '~/modules/auth/decorators/permission.decorator'
 import { RbacGuard } from '~/modules/auth/guards/rbac.guard'
 import { CreatePictureDto } from './dto/create-picture.dto'
 import { PicturePageDto } from './dto/picture-page.dto'
@@ -28,23 +44,51 @@ export class PictureController {
   @Post('upload')
   @Perm(permissions.UPLOAD)
   @ApiOperation({ summary: '上传图片' })
-  async create(@Body() createPictureDto: CreatePictureDto, @AuthUser() user: IAuthUser) {
-    return this.pictureService.create(createPictureDto, user)
+  @ApiConsumes('multipart/form-data')
+  @ApiBody({
+    type: CreatePictureDto,
+  })
+  async create(
+    @Req() req: FastifyRequest,
+    @AuthUser() user: IAuthUser,
+  ) {
+    if (!req.isMultipart())
+      throw new BadRequestException('Request is not multipart')
+    const file = await req.file()
+    const query: any = await req.query
+
+    const params = {
+      file,
+      description: query.description as string,
+      categoryId: Number.parseInt(query.categoryId as string, 10), // 确保 categoryId 是数字
+    } as CreatePictureDto
+    console.log(params)
+
+    try {
+      return await this.pictureService.create(params, user)
+    }
+    catch (error) {
+      console.log(error)
+      throw new BadRequestException('保存图片信息失败')
+    }
   }
 
   @Put(':id')
   @Perm(permissions.UPDATE)
   @ApiOperation({ summary: '更新图片' })
-  async update(@Param('id') id: string, @Body() updatePictureDto: UpdatePictureDto) {
+  async update(
+    @Param('id') id: string,
+    @Body() updatePictureDto: UpdatePictureDto,
+  ) {
     return this.pictureService.update(+id, updatePictureDto)
   }
 
   @Delete(':ids')
   @Perm(permissions.DELETE)
   @ApiOperation({ summary: '删除图片' })
-  async delete(@Param('ids') ids: string) {
+  async delete(@Param('ids') ids: string, @AuthUser() user: IAuthUser) {
     const pictureIds = ids.split(',').map(id => +id)
-    return this.pictureService.delete(pictureIds)
+    return this.pictureService.delete(pictureIds, user)
   }
 
   @Get(':id')
@@ -57,8 +101,8 @@ export class PictureController {
   @Get('list')
   @Perm(permissions.LIST)
   @ApiOperation({ summary: '获取图片列表（分页）' })
-  async list(@Query() pageDto: PicturePageDto) {
-    return this.pictureService.list(pageDto)
+  async list(@Query() pageDto: PicturePageDto, @AuthUser() user: IAuthUser) {
+    return this.pictureService.list(pageDto, user)
   }
 
   @Get('count')

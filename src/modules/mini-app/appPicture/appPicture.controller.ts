@@ -2,6 +2,7 @@ import { Controller, Get, Param, Query } from '@nestjs/common'
 import { ApiOperation, ApiTags } from '@nestjs/swagger'
 import { PicturePageDto } from '~/modules/appManage/picture/dto/picture-page.dto'
 import { AllowAnon } from '~/modules/auth/decorators/allow-anon.decorator'
+import { AuthUser } from '~/modules/auth/decorators/auth-user.decorator'
 import { Public } from '~/modules/auth/decorators/public.decorator'
 import { AppPictureService } from './appPicture.service'
 
@@ -14,8 +15,8 @@ export class AppPictureController {
   @Get('list')
   @ApiOperation({ summary: '获取图片列表（分页）' })
   @AllowAnon()
-  async getPictures(@Query() pageDto: PicturePageDto) {
-    return this.appPictureService.getPictures(pageDto)
+  async getPictures(@Query() pageDto: PicturePageDto, @AuthUser() user: IAuthUser) {
+    return this.appPictureService.getPictures(pageDto, user)
   }
 
   @Get(':id')

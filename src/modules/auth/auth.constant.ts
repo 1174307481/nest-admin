@@ -20,6 +20,7 @@ export const AuthStrategy = {
 export const Roles = {
   ADMIN: 'admin',
   USER: 'user',
+  CREATOR: 'creator',
   // GUEST: 'guest',
 } as const
 

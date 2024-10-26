@@ -6,8 +6,8 @@ import { PictureService } from '~/modules/appManage/picture/picture.service'
 export class AppPictureService {
   constructor(private readonly pictureService: PictureService) {}
 
-  async getPictures(pageDto: PicturePageDto) {
-    return this.pictureService.list(pageDto)
+  async getPictures(pageDto: PicturePageDto, user: IAuthUser) {
+    return this.pictureService.list(pageDto, user)
   }
 
   async getPictureDetail(id: number) {

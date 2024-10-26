@@ -14,7 +14,7 @@ export class HomeService {
     return this.bannerService.getAllBanners()
   }
 
-  async getPictures(pageDto: PicturePageDto) {
-    return this.pictureService.list(pageDto)
+  async getPictures(pageDto: PicturePageDto, user: IAuthUser) {
+    return this.pictureService.list(pageDto, user)
   }
 }
