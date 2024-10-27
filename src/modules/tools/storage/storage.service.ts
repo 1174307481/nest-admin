@@ -11,7 +11,7 @@ import { MinioService } from '~/shared/minio/minio.service'
 
 import { deleteFile } from '~/utils'
 import { StorageCreateDto, StoragePageDto } from './storage.dto'
-import { StorageInfo } from './storage.modal' // 导入MinioService
+import { StorageInfo } from './storage.modal'
 
 @Injectable()
 export class StorageService {
@@ -20,14 +20,23 @@ export class StorageService {
     private storageRepository: Repository<Storage>,
     @InjectRepository(UserEntity)
     private userRepository: Repository<UserEntity>,
-    private readonly minioService: MinioService, // 注入MinioService
+    private readonly minioService: MinioService,
   ) {}
 
-  async create(dto: StorageCreateDto, userId: number): Promise<void> {
-    await this.storageRepository.save({
+  async create(dto: StorageCreateDto, userId: number): Promise<Storage> {
+    // 查找用户
+    const user = await this.userRepository.findOne({ where: { id: userId } })
+    if (!user) {
+      throw new Error('用户不存在')
+    }
+
+    // 创建并保存存储记录
+    const storage = this.storageRepository.create({
       ...dto,
-      userId,
+      user, // 使用完整的用户对象
     })
+
+    return await this.storageRepository.save(storage)
   }
 
   /**
@@ -62,18 +71,32 @@ export class StorageService {
   }: StoragePageDto): Promise<Pagination<StorageInfo>> {
     const queryBuilder = this.storageRepository
       .createQueryBuilder('storage')
-      .leftJoinAndSelect('sys_user', 'user', 'storage.user_id = user.id')
+      .leftJoinAndSelect('storage.user', 'user')
+      .select([
+        'storage.id',
+        'storage.name',
+        'storage.extName',
+        'storage.path',
+        'storage.type',
+        'storage.size',
+        'storage.createdAt',
+        'storage.objectName',
+        'user.id',
+        'user.username',
+        'user.avatar',
+      ])
       .where({
         ...(name && { name: Like(`%${name}%`) }),
         ...(type && { type }),
         ...(extName && { extName }),
         ...(size && { size: Between(size[0], size[1]) }),
         ...(time && { createdAt: Between(time[0], time[1]) }),
-        ...(username && {
-          userId: await (await this.userRepository.findOneBy({ username })).id,
-        }),
       })
-      .orderBy('storage.created_at', 'DESC')
+      .orderBy('storage.createdAt', 'DESC')
+
+    if (username) {
+      queryBuilder.andWhere('user.username = :username', { username })
+    }
 
     const { items, ...rest } = await paginateRaw<Storage>(queryBuilder, {
       page,
@@ -91,7 +114,12 @@ export class StorageService {
           type: e.storage_type,
           size: e.storage_size,
           createdAt: e.storage_created_at,
-          username: e.user_username,
+          objectName: e.storage_object_name,
+          user: {
+            id: e.user_id,
+            username: e.user_username,
+            avatar: e.user_avatar,
+          },
         }
       })
     }

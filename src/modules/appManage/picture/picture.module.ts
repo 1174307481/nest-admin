@@ -4,7 +4,9 @@ import { TypeOrmModule } from '@nestjs/typeorm'
 import { CategoryModule } from '~/modules/appManage/category/category.module'
 
 import { AuthModule } from '~/modules/auth/auth.module'
+import { Storage } from '~/modules/tools/storage/storage.entity'
 import { UploadModule } from '~/modules/tools/upload/upload.module'
+import { CategoryEntity } from '../category/category.entity'
 import { PictureAuditModule } from '../pictureAudit/pictureAudit.module'
 import { PictureController } from './picture.controller'
 import { Picture } from './picture.entity'
@@ -16,7 +18,7 @@ import { PictureService } from './picture.service'
     CategoryModule,
     AuthModule,
     forwardRef(() => PictureAuditModule),
-    TypeOrmModule.forFeature([Picture]),
+    TypeOrmModule.forFeature([Picture, Storage, CategoryEntity]),
   ],
   controllers: [PictureController],
   providers: [PictureService],

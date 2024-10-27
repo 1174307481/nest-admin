@@ -1,7 +1,8 @@
 import { ApiProperty } from '@nestjs/swagger'
-import { Column, Entity } from 'typeorm'
+import { Column, Entity, JoinColumn, ManyToOne } from 'typeorm'
 
 import { CommonEntity } from '~/common/entity/common.entity'
+import { UserEntity } from '~/modules/user/user.entity'
 
 @Entity({ name: 'tool_storage' })
 export class Storage extends CommonEntity {
@@ -23,7 +24,7 @@ export class Storage extends CommonEntity {
   extName: string
 
   @Column({ type: 'varchar' })
-  @ApiProperty({ description: '文件类型' })
+  @ApiProperty({ description: '文件路径' })
   path: string
 
   @Column({ type: 'varchar', nullable: true })
@@ -34,10 +35,11 @@ export class Storage extends CommonEntity {
   @ApiProperty({ description: '文件大小' })
   size: string
 
-  @Column({ nullable: true, name: 'user_id' })
-  @ApiProperty({ description: '用户ID' })
-  userId: number
+  @ManyToOne(() => UserEntity, user => user.storages)
+  @JoinColumn({ name: 'user_id' })
+  @ApiProperty({ description: '用户' })
+  user: UserEntity
 
   @Column()
-  objectName: string // 添加objectName字段
+  objectName: string
 }

@@ -7,7 +7,7 @@ import { Public } from '~/modules/auth/decorators/public.decorator'
 import { AppPictureService } from './appPicture.service'
 
 @ApiTags('Mini-App - Picture')
-@Controller('appPictures')
+@Controller('appPicture')
 @Public()
 export class AppPictureController {
   constructor(private readonly appPictureService: AppPictureService) {}
@@ -15,7 +15,10 @@ export class AppPictureController {
   @Get('list')
   @ApiOperation({ summary: '获取图片列表（分页）' })
   @AllowAnon()
-  async getPictures(@Query() pageDto: PicturePageDto, @AuthUser() user: IAuthUser) {
+  async getPictures(
+    @Query() pageDto: PicturePageDto,
+    @AuthUser() user: IAuthUser,
+  ) {
     return this.appPictureService.getPictures(pageDto, user)
   }
 

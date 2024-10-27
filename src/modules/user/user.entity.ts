@@ -82,4 +82,7 @@ export class UserEntity extends CommonEntity {
     inverseJoinColumn: { name: 'picture_id', referencedColumnName: 'id' },
   })
   favoritePictures: Relation<Picture[]>
+
+  @OneToMany(() => Storage, storage => storage.user)
+  storages: Relation<Storage[]>
 }

@@ -1,18 +1,14 @@
 import { ApiProperty } from '@nestjs/swagger'
-import {
-  Column,
-  Entity,
-  JoinColumn,
-  OneToOne,
-  Tree,
-  TreeChildren,
-  TreeParent,
-} from 'typeorm'
+import { Column, Entity, JoinColumn, OneToOne } from 'typeorm'
 import { CompleteEntity } from '~/common/entity/common.entity'
 import { Storage } from '~/modules/tools/storage/storage.entity'
 
-@Entity({ name: 'sys_category' })
-@Tree('materialized-path')
+export enum IsBaseEnum {
+  NO = 0,
+  YES = 1,
+}
+
+@Entity({ name: 'app_category' })
 export class CategoryEntity extends CompleteEntity {
   @Column()
   @ApiProperty({ description: '分类名称' })
@@ -31,9 +27,11 @@ export class CategoryEntity extends CompleteEntity {
   @ApiProperty({ description: '排序' })
   orderNo: number
 
-  @TreeChildren({ cascade: true })
-  children: CategoryEntity[]
-
-  @TreeParent({ onDelete: 'SET NULL' })
-  parent?: CategoryEntity
+  @Column({ type: 'tinyint', default: 0 })
+  @ApiProperty({
+    description: '是否为首页展示',
+    type: Number,
+    default: 0,
+  })
+  isBase: number
 }

@@ -1,6 +1,8 @@
 import { Injectable } from '@nestjs/common'
 import { InjectRepository } from '@nestjs/typeorm'
 import { Repository } from 'typeorm'
+import { paginate } from '~/helper/paginate'
+import { Pagination } from '~/helper/paginate/pagination'
 import { Picture } from '~/modules/appManage/picture/picture.entity'
 import { UserEntity } from '~/modules/user/user.entity'
 
@@ -42,11 +44,18 @@ export class UserFavoriteService {
     }
   }
 
-  async getUserFavorites(userId: number): Promise<Picture[]> {
-    const user = await this.userRepository.findOne({
-      where: { id: userId },
-      relations: ['favoritePictures'],
-    })
-    return user ? user.favoritePictures : []
+  async getUserFavorites(
+    userId: number,
+    page: number,
+    pageSize: number,
+  ): Promise<Pagination<Picture>> {
+    const queryBuilder = this.pictureRepository
+      .createQueryBuilder('picture')
+      .innerJoin('picture.favoriteUsers', 'user', 'user.id = :userId', {
+        userId,
+      })
+      .orderBy('picture.id', 'DESC')
+
+    return paginate(queryBuilder, { page, pageSize })
   }
 }

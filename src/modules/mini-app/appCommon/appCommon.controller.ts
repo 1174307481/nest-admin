@@ -1,30 +1,23 @@
-import { BadRequestException, Controller, Post, Req } from '@nestjs/common'
+import {
+  BadRequestException,
+  Controller,
+  Post,
+  Req,
+} from '@nestjs/common'
 import { ApiBody, ApiConsumes, ApiOperation, ApiTags } from '@nestjs/swagger'
 import { FastifyRequest } from 'fastify'
-
 import { ApiSecurityAuth } from '~/common/decorators/swagger.decorator'
 import { AuthUser } from '~/modules/auth/decorators/auth-user.decorator'
-
-import {
-  definePermission,
-  Perm,
-} from '~/modules/auth/decorators/permission.decorator'
-
-import { FileUploadDto } from './upload.dto'
-import { UploadService } from './upload.service'
-
-export const permissions = definePermission('upload', {
-  UPLOAD: 'upload',
-} as const)
+import { FileUploadDto } from '~/modules/tools/upload/upload.dto'
+import { UploadService } from '~/modules/tools/upload/upload.service'
 
 @ApiSecurityAuth()
 @ApiTags('Tools - 上传模块')
-@Controller('upload')
-export class UploadController {
+@Controller('app-common')
+export class AppCommonController {
   constructor(private uploadService: UploadService) {}
 
   @Post()
-  @Perm(permissions.UPLOAD)
   @ApiOperation({ summary: '上传' })
   @ApiConsumes('multipart/form-data')
   @ApiBody({
@@ -41,10 +34,6 @@ export class UploadController {
       console.log(key, value)
       params[key] = value
     }
-    // https://github.com/fastify/fastify-multipart
-    // const parts = req.files()
-    // for await (const part of parts)
-    //   console.log(part.file)
 
     try {
       const storage = await this.uploadService.saveFile(

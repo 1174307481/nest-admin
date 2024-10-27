@@ -1,7 +1,10 @@
 import { Body, Controller, Get, Put, UseGuards } from '@nestjs/common'
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger'
 import { AuthUser } from '~/modules/auth/decorators/auth-user.decorator'
-import { definePermission, Perm } from '~/modules/auth/decorators/permission.decorator'
+import {
+  definePermission,
+  Perm,
+} from '~/modules/auth/decorators/permission.decorator'
 import { JwtAuthGuard } from '~/modules/auth/guards/jwt-auth.guard'
 import { UserEntity } from '~/modules/user/user.entity'
 import { AppUserService } from './appUser.service'
@@ -25,10 +28,13 @@ export class AppUserController {
     return this.appUserService.getUserInfo(user.id)
   }
 
-  @Put('info')
+  @Put('update')
   @ApiOperation({ summary: '更新用户信息' })
   @Perm(permissions.UPDATE)
-  async updateUserInfo(@AuthUser() user: UserEntity, @Body() updateData: Partial<UserEntity>) {
+  async updateUserInfo(
+    @AuthUser() user: UserEntity,
+    @Body() updateData: Partial<UserEntity>,
+  ) {
     return this.appUserService.updateUserInfo(user.id, updateData)
   }
 }

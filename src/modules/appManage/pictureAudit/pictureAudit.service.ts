@@ -5,7 +5,10 @@ import { paginate } from '~/helper/paginate'
 import { Pagination } from '~/helper/paginate/pagination'
 import { UserEntity } from '~/modules/user/user.entity'
 import { Picture } from '../picture/picture.entity'
-import { BatchUpdatePictureAuditDto, PictureAuditQueryDto } from './pictureAudit.dto'
+import {
+  BatchUpdatePictureAuditDto,
+  PictureAuditQueryDto,
+} from './pictureAudit.dto'
 import { PictureAuditEntity } from './pictureAudit.entity'
 
 @Injectable()
@@ -18,7 +21,9 @@ export class PictureAuditService {
   ) {}
 
   async create(pictureId: number, userId: number): Promise<PictureAuditEntity> {
-    const picture = await this.pictureRepo.findOne({ where: { id: pictureId } })
+    const picture = await this.pictureRepo.findOne({
+      where: { id: pictureId },
+    })
     if (!picture) {
       throw new Error('图片不存在')
     }
@@ -32,7 +37,11 @@ export class PictureAuditService {
     return this.pictureAuditRepo.save(pictureAudit)
   }
 
-  async update(id: number, auditStatus: number, remark?: string): Promise<PictureAuditEntity> {
+  async update(
+    id: number,
+    auditStatus: number,
+    remark?: string,
+  ): Promise<PictureAuditEntity> {
     const pictureAudit = await this.pictureAuditRepo.findOne({
       where: { id },
       relations: ['picture'],
@@ -52,7 +61,9 @@ export class PictureAuditService {
     return this.pictureAuditRepo.save(pictureAudit)
   }
 
-  async list(query: PictureAuditQueryDto): Promise<Pagination<PictureAuditEntity>> {
+  async list(
+    query: PictureAuditQueryDto,
+  ): Promise<Pagination<PictureAuditEntity>> {
     const { page = 1, pageSize = 10, auditStatus } = query
     const queryBuilder = this.pictureAuditRepo
       .createQueryBuilder('pictureAudit')
@@ -62,7 +73,9 @@ export class PictureAuditService {
       .orderBy('pictureAudit.createdAt', 'DESC')
 
     if (auditStatus !== undefined) {
-      queryBuilder.andWhere('pictureAudit.auditStatus = :auditStatus', { auditStatus })
+      queryBuilder.andWhere('pictureAudit.auditStatus = :auditStatus', {
+        auditStatus,
+      })
     }
 
     return paginate(queryBuilder, { page, pageSize })
@@ -95,5 +108,13 @@ export class PictureAuditService {
     await this.pictureAuditRepo.save(pictureAudits)
 
     return { message: '批量审核成功', updatedCount: pictureAudits.length }
+  }
+
+  async deleteByPictureIds(pictureIds: number[]): Promise<void> {
+    await this.pictureAuditRepo
+      .createQueryBuilder()
+      .delete()
+      .where('picture_id IN (:...pictureIds)', { pictureIds })
+      .execute()
   }
 }

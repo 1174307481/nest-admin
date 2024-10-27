@@ -13,7 +13,7 @@ dist
 #.env.development
 #.env.production
 .env.local
-
+.env
 .eslintcache
 
 # Log files

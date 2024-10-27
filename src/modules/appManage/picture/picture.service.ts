@@ -1,6 +1,13 @@
-import { ForbiddenException, forwardRef, Inject, Injectable } from '@nestjs/common'
+import {
+  ForbiddenException,
+  forwardRef,
+  Inject,
+  Injectable,
+} from '@nestjs/common'
 import { InjectRepository } from '@nestjs/typeorm'
-import { Like, Repository } from 'typeorm'
+import { In, Repository } from 'typeorm'
+import { paginateRaw } from '~/helper/paginate'
+import { PaginationTypeEnum } from '~/helper/paginate/interface'
 import { Pagination } from '~/helper/paginate/pagination'
 import { Roles } from '~/modules/auth/auth.constant'
 import { Storage } from '~/modules/tools/storage/storage.entity'
@@ -10,7 +17,7 @@ import { PictureAuditService } from '../pictureAudit/pictureAudit.service'
 import { CreatePictureDto } from './dto/create-picture.dto'
 import { PicturePageDto } from './dto/picture-page.dto'
 import { UpdatePictureDto } from './dto/update-picture.dto'
-import { Picture } from './picture.entity'
+import { IsBaseEnum, Picture } from './picture.entity'
 
 @Injectable()
 export class PictureService {
@@ -26,15 +33,25 @@ export class PictureService {
     private readonly pictureAuditService: PictureAuditService,
   ) {}
 
-  async create(createPictureDto: CreatePictureDto, user: IAuthUser): Promise<Picture> {
-    const file = await this.uploadService.saveFile(createPictureDto.file, user.uid)
+  async create(
+    createPictureDto: CreatePictureDto,
+    user: IAuthUser,
+  ): Promise<Picture> {
+    const file = await this.uploadService.saveFile(
+      createPictureDto.file as File,
+      user.uid,
+    )
     if (!file) {
       throw new Error('文件不存在')
     }
 
-    const category = await this.categoryRepository.findOne({ where: { id: createPictureDto.categoryId } })
-    if (!category) {
-      throw new Error('分类不存在')
+    const categories = await this.categoryRepository.findBy({
+      id: In(createPictureDto.categoryIds),
+    })
+    console.log('categories', categories)
+
+    if (categories.length !== createPictureDto.categoryIds?.length) {
+      throw new Error('部分分类不存在')
     }
 
     const isAdmin = user.roles.includes(Roles.ADMIN)
@@ -42,10 +59,11 @@ export class PictureService {
 
     const picture = this.pictureRepository.create({
       name: file.name, // 使用上传文件的名称作为图片名称
-      category,
       description: createPictureDto.description,
       storage: file,
+      categories,
       auditStatus,
+      isBase: createPictureDto.isBase ? IsBaseEnum.YES : IsBaseEnum.NO,
     })
     const savedPicture = await this.pictureRepository.save(picture)
 
@@ -56,31 +74,47 @@ export class PictureService {
     return savedPicture
   }
 
-  async update(id: number, updatePictureDto: UpdatePictureDto): Promise<Picture> {
-    const picture = await this.pictureRepository.findOne({ where: { id } })
+  async update(
+    id: number,
+    updatePictureDto: UpdatePictureDto,
+  ): Promise<Picture> {
+    const picture = await this.pictureRepository.findOne({
+      where: { id },
+      relations: ['categories', 'storage'],
+    })
     if (!picture) {
       throw new Error('图片不存在')
     }
-    Roles
-    if (updatePictureDto.fileId) {
-      const storage = await this.storageRepository.findOne({ where: { id: updatePictureDto.fileId } })
+
+    if (updatePictureDto.storageId) {
+      const storage = await this.storageRepository.findOne({
+        where: { id: updatePictureDto.storageId },
+      })
       if (!storage) {
         throw new Error('文件不存在')
       }
       picture.storage = storage
     }
 
-    if (updatePictureDto.categoryId) {
-      const category = await this.categoryRepository.findOne({ where: { id: updatePictureDto.categoryId } })
-      if (!category) {
-        throw new Error('分类不存在')
+    if (updatePictureDto.categoryIds) {
+      const categories = await this.categoryRepository.findByIds(
+        updatePictureDto.categoryIds,
+      )
+      if (categories.length !== updatePictureDto.categoryIds.length) {
+        throw new Error('部分分类不存在')
       }
-      picture.category = category
+      picture.categories = categories
     }
 
-    if (updatePictureDto.description) {
+    if (updatePictureDto.description !== undefined) {
       picture.description = updatePictureDto.description
     }
+    console.log(updatePictureDto)
+
+    if (updatePictureDto.isBase !== undefined) {
+      picture.isBase = updatePictureDto.isBase ? IsBaseEnum.YES : IsBaseEnum.NO
+    }
+    console.log(picture)
 
     return await this.pictureRepository.save(picture)
   }
@@ -91,18 +125,29 @@ export class PictureService {
       const pictures = await this.pictureRepository
         .createQueryBuilder('picture')
         .leftJoinAndSelect('picture.storage', 'storage')
+        .leftJoinAndSelect('storage.user', 'user')
         .where('picture.id IN (:...ids)', { ids })
-        .andWhere('storage.userId = :userId', { userId: user.uid })
+        .andWhere('user.id = :userId', { userId: user.uid })
         .getMany()
 
       if (pictures.length !== ids.length) {
         throw new ForbiddenException('您没有权限删除不属于您的图片')
       }
 
+      // 先删除相关的审核记录
+      await this.pictureAuditService.deleteByPictureIds(
+        pictures.map(p => p.id),
+      )
+
+      // 然后删除图片
       await this.pictureRepository.remove(pictures)
     }
     else {
       // 其他角色（如 ADMIN）可以删除任何图片
+      // 先删除相关的审核记录
+      await this.pictureAuditService.deleteByPictureIds(ids)
+
+      // 然后删除图片
       await this.pictureRepository.delete(ids)
     }
   }
@@ -111,44 +156,139 @@ export class PictureService {
     return this.pictureRepository.findOne({ where: { id } })
   }
 
-  async list(pageDto: PicturePageDto, user: IAuthUser): Promise<Pagination<Picture>> {
-    const { page, pageSize, categoryId, name, description } = pageDto
+  async list(
+    pageDto: PicturePageDto,
+    user: IAuthUser,
+    isApp: boolean = false,
+  ): Promise<Pagination<Picture>> {
+    const {
+      page,
+      pageSize,
+      categoryId,
+      name,
+      description,
+      auditStatus,
+      isBase,
+    } = pageDto
 
-    const where: any = {}
+    const queryBuilder = this.pictureRepository
+      .createQueryBuilder('picture')
+      .leftJoinAndSelect('picture.storage', 'storage')
+      .leftJoinAndSelect('picture.categories', 'category')
+      .leftJoinAndSelect('storage.user', 'user')
+      .leftJoinAndSelect('user.avatar', 'userAvatar')
+      .select([
+        'picture.id',
+        'picture.name',
+        'picture.description',
+        'picture.auditStatus',
+        'picture.createdAt',
+        'picture.updatedAt',
+        'picture.isBase',
+        'storage.id',
+        'storage.name',
+        'storage.path',
+        'storage.type',
+        'storage.size',
+        'storage.extName',
+        'storage.objectName',
+        'category.id',
+        'category.name',
+        'user.id',
+        'user.username',
+        'userAvatar.id',
+        'userAvatar.path',
+      ])
 
-    if (user.roles.includes(Roles.CREATOR)) {
-      where['storage.userId'] = user.uid
+    if (user?.roles?.includes(Roles.CREATOR) && !isApp) {
+      queryBuilder.andWhere('user.id = :userId', { userId: user.uid })
     }
 
     if (categoryId) {
-      where['category.id'] = categoryId
+      queryBuilder.andWhere('category.id = :categoryId', { categoryId })
     }
 
     if (name) {
-      where.name = Like(`%${name}%`)
+      queryBuilder.andWhere('picture.name LIKE :name', { name: `%${name}%` })
     }
 
     if (description) {
-      where.description = Like(`%${description}%`)
+      queryBuilder.andWhere('picture.description LIKE :description', {
+        description: `%${description}%`,
+      })
     }
 
-    const [items, total] = await this.pictureRepository.findAndCount({
-      where,
-      relations: ['storage', 'category'],
-      skip: (page - 1) * pageSize,
-      take: pageSize,
-      order: { id: 'DESC' }, // 你可以根据需要修改排序
+    if (auditStatus !== undefined) {
+      queryBuilder.andWhere('picture.auditStatus = :auditStatus', {
+        auditStatus,
+      })
+    }
+
+    console.log(isBase, 'isBase')
+    // 添加 isBase 过滤
+    if (isBase !== undefined) {
+      console.log('11111')
+      console.log(isBase, 'isBase')
+
+      queryBuilder.andWhere('picture.isBase = :isBase', { isBase })
+    }
+
+    const { items, ...rest } = await paginateRaw<Picture>(queryBuilder, {
+      page,
+      pageSize,
+      paginationType: PaginationTypeEnum.LIMIT_AND_OFFSET,
     })
 
+    function formatResult(result: any[]) {
+      const pictureMap = new Map()
+
+      result.forEach((e) => {
+        if (!pictureMap.has(e.picture_id)) {
+          pictureMap.set(e.picture_id, {
+            id: e.picture_id,
+            name: e.picture_name,
+            description: e.picture_description,
+            auditStatus: e.picture_auditStatus,
+            isBase: Number(e.picture_isBase),
+            createdAt: e.picture_createdAt,
+            updatedAt: e.picture_updatedAt,
+            storage: {
+              id: e.storage_id,
+              name: e.storage_name,
+              path: e.storage_path,
+              type: e.storage_type,
+              size: e.storage_size,
+              objectName: e.storage_objectName,
+              extName: e.storage_ext_name,
+              user: {
+                id: e.user_id,
+                username: e.user_username,
+                avatar: e.userAvatar_path,
+              },
+            },
+            categories: [],
+            favoriteUsers: [],
+          })
+        }
+
+        const picture = pictureMap.get(e.picture_id)
+        if (
+          e.category_id
+          && !picture.categories.some(c => c.id === e.category_id)
+        ) {
+          picture.categories.push({
+            id: e.category_id,
+            name: e.category_name,
+          })
+        }
+      })
+
+      return Array.from(pictureMap.values())
+    }
+
     return {
-      items,
-      meta: {
-        itemCount: items.length,
-        totalItems: total,
-        itemsPerPage: pageSize,
-        totalPages: Math.ceil(total / pageSize),
-        currentPage: page,
-      },
+      items: formatResult(items) as any,
+      ...rest,
     }
   }
 

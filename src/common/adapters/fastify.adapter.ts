@@ -11,6 +11,7 @@ const app: FastifyAdapter = new FastifyAdapter({
 export { app as fastifyApp }
 
 app.register(FastifyMultipart, {
+  attachFieldsToBody: true,
   limits: {
     fields: 10, // Max number of non-file fields
     fileSize: 1024 * 1024 * 6, // limit size 6M

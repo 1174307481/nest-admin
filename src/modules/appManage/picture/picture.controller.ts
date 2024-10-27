@@ -2,7 +2,6 @@ import {
   BadRequestException,
   Body,
   Controller,
-  Delete,
   Get,
   Param,
   Post,
@@ -48,23 +47,28 @@ export class PictureController {
   @ApiBody({
     type: CreatePictureDto,
   })
-  async create(
-    @Req() req: FastifyRequest,
-    @AuthUser() user: IAuthUser,
-  ) {
+  async create(@Req() req: FastifyRequest, @AuthUser() user: IAuthUser) {
     if (!req.isMultipart())
       throw new BadRequestException('Request is not multipart')
-    const file = await req.file()
-    const query: any = await req.query
-
-    const params = {
-      file,
-      description: query.description as string,
-      categoryId: Number.parseInt(query.categoryId as string, 10), // 确保 categoryId 是数字
-    } as CreatePictureDto
-    console.log(params)
 
     try {
+      const params: any = {}
+      const formData = await req.formData()
+      // console.log("formData", formData);
+      for (const [key, value] of formData.entries()) {
+        // console.log(key, value);
+        if (params[key]) {
+          // 数组
+          params[key] = [...params[key], value]
+          if (key === 'categoryIds') {
+            params[key] = params[key].map(n => +n)
+          }
+        }
+        else {
+          params[key] = value
+        }
+      }
+      console.log('params', params)
       return await this.pictureService.create(params, user)
     }
     catch (error) {
@@ -83,12 +87,11 @@ export class PictureController {
     return this.pictureService.update(+id, updatePictureDto)
   }
 
-  @Delete(':ids')
+  @Post('delete')
   @Perm(permissions.DELETE)
   @ApiOperation({ summary: '删除图片' })
-  async delete(@Param('ids') ids: string, @AuthUser() user: IAuthUser) {
-    const pictureIds = ids.split(',').map(id => +id)
-    return this.pictureService.delete(pictureIds, user)
+  async delete(@Body() dto: { ids: number[] }, @AuthUser() user: IAuthUser) {
+    return this.pictureService.delete(dto.ids, user)
   }
 
   @Get(':id')
