@@ -5,6 +5,8 @@ import { Repository } from 'typeorm'
 import { paginate } from '~/helper/paginate'
 import { Pagination } from '~/helper/paginate/pagination'
 import { Storage } from '~/modules/tools/storage/storage.entity'
+import { UserEntity } from '~/modules/user/user.entity'
+import { Picture } from '../picture/picture.entity'
 import { CategoryDto, CategoryQueryDto } from './category.dto'
 import { CategoryEntity, IsBaseEnum } from './category.entity'
 
@@ -15,6 +17,10 @@ export class CategoryService {
     protected readonly categoryRepository: Repository<CategoryEntity>,
     @InjectRepository(Storage)
     private readonly storageRepository: Repository<Storage>,
+    @InjectRepository(UserEntity)
+    private readonly userRepository: Repository<UserEntity>,
+    @InjectRepository(Picture)
+    private readonly pictureRepository: Repository<Picture>,
   ) {}
 
   protected getCategoryRepository(): Repository<CategoryEntity> {
@@ -107,5 +113,24 @@ export class CategoryService {
     }
 
     return queryBuilder.getMany()
+  }
+
+  async getUserPictureCategories(userId: number): Promise<CategoryEntity[]> {
+    // 查找用户收藏的所有图片
+    const pictures = await this.pictureRepository.find({
+      where: { userId },
+      relations: ['categories'],
+    })
+
+    // 使用Set来避免重复的分类
+    const categorySet = new Set<CategoryEntity>()
+    pictures.forEach((picture) => {
+      picture.categories.forEach(category => categorySet.add(category))
+    })
+
+    // 将“未分类”添加到集合的开头
+    const uncategorized = new CategoryEntity()
+    uncategorized.name = '未分类'
+    return [uncategorized, ...Array.from(categorySet)]
   }
 }

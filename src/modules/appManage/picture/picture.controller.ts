@@ -6,7 +6,6 @@ import {
   Param,
   Post,
   Put,
-  Query,
   Req,
   UseGuards,
 } from '@nestjs/common'
@@ -101,10 +100,10 @@ export class PictureController {
     return this.pictureService.findOne(+id)
   }
 
-  @Get('list')
+  @Post('list')
   @Perm(permissions.LIST)
   @ApiOperation({ summary: '获取图片列表（分页）' })
-  async list(@Query() pageDto: PicturePageDto, @AuthUser() user: IAuthUser) {
+  async list(@Body() pageDto: PicturePageDto, @AuthUser() user: IAuthUser) {
     return this.pictureService.list(pageDto, user)
   }
 

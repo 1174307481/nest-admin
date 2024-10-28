@@ -50,6 +50,8 @@ export class Picture extends CommonEntity {
   })
   isBase: number
 
+  @Column()
+  userId: number
   // 如果 CommonEntity 中没有定义这些字段，可以在这里添加
   // @CreateDateColumn()
   // createdAt: Date

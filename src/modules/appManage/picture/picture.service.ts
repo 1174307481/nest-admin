@@ -12,6 +12,7 @@ import { Pagination } from '~/helper/paginate/pagination'
 import { Roles } from '~/modules/auth/auth.constant'
 import { Storage } from '~/modules/tools/storage/storage.entity'
 import { UploadService } from '~/modules/tools/upload/upload.service'
+import { UserEntity } from '~/modules/user/user.entity'
 import { CategoryEntity } from '../../appManage/category/category.entity'
 import { PictureAuditService } from '../pictureAudit/pictureAudit.service'
 import { CreatePictureDto } from './dto/create-picture.dto'
@@ -28,6 +29,8 @@ export class PictureService {
     private storageRepository: Repository<Storage>,
     @InjectRepository(CategoryEntity)
     private categoryRepository: Repository<CategoryEntity>,
+    @InjectRepository(UserEntity)
+    private userRepository: Repository<UserEntity>,
     private readonly uploadService: UploadService,
     @Inject(forwardRef(() => PictureAuditService))
     private readonly pictureAuditService: PictureAuditService,
@@ -58,12 +61,13 @@ export class PictureService {
     const auditStatus = isAdmin ? 1 : 0
 
     const picture = this.pictureRepository.create({
-      name: file.name, // 使用上传文件的名称作为图片名称
+      name: file.name,
       description: createPictureDto.description,
       storage: file,
       categories,
       auditStatus,
       isBase: createPictureDto.isBase ? IsBaseEnum.YES : IsBaseEnum.NO,
+      userId: user.uid, // 直接存储 userId
     })
     const savedPicture = await this.pictureRepository.save(picture)
 
@@ -80,7 +84,7 @@ export class PictureService {
   ): Promise<Picture> {
     const picture = await this.pictureRepository.findOne({
       where: { id },
-      relations: ['categories', 'storage'],
+      relations: ['categories', 'storage'], // 不再需要 'user' 关系
     })
     if (!picture) {
       throw new Error('图片不存在')
@@ -164,7 +168,7 @@ export class PictureService {
     const {
       page,
       pageSize,
-      categoryId,
+      categoryIds,
       name,
       description,
       auditStatus,
@@ -175,8 +179,6 @@ export class PictureService {
       .createQueryBuilder('picture')
       .leftJoinAndSelect('picture.storage', 'storage')
       .leftJoinAndSelect('picture.categories', 'category')
-      .leftJoinAndSelect('storage.user', 'user')
-      .leftJoinAndSelect('user.avatar', 'userAvatar')
       .select([
         'picture.id',
         'picture.name',
@@ -185,6 +187,7 @@ export class PictureService {
         'picture.createdAt',
         'picture.updatedAt',
         'picture.isBase',
+        'picture.userId',
         'storage.id',
         'storage.name',
         'storage.path',
@@ -194,18 +197,14 @@ export class PictureService {
         'storage.objectName',
         'category.id',
         'category.name',
-        'user.id',
-        'user.username',
-        'userAvatar.id',
-        'userAvatar.path',
       ])
 
     if (user?.roles?.includes(Roles.CREATOR) && !isApp) {
-      queryBuilder.andWhere('user.id = :userId', { userId: user.uid })
+      queryBuilder.andWhere('picture.userId = :userId', { userId: user.uid })
     }
 
-    if (categoryId) {
-      queryBuilder.andWhere('category.id = :categoryId', { categoryId })
+    if (categoryIds) {
+      queryBuilder.andWhere('category.id IN (:...categoryIds)', { categoryIds })
     }
 
     if (name) {
@@ -224,12 +223,7 @@ export class PictureService {
       })
     }
 
-    console.log(isBase, 'isBase')
-    // 添加 isBase 过滤
     if (isBase !== undefined) {
-      console.log('11111')
-      console.log(isBase, 'isBase')
-
       queryBuilder.andWhere('picture.isBase = :isBase', { isBase })
     }
 
@@ -239,11 +233,16 @@ export class PictureService {
       paginationType: PaginationTypeEnum.LIMIT_AND_OFFSET,
     })
 
-    function formatResult(result: any[]) {
+    const userIds = items.map((item: any) => item.picture_userId)
+    const users = await this.userRepository.findByIds(userIds)
+
+    function formatResult(result: any[], users: UserEntity[]) {
       const pictureMap = new Map()
+      const userMap = new Map(users.map(user => [user.id, user]))
 
       result.forEach((e) => {
         if (!pictureMap.has(e.picture_id)) {
+          const user = userMap.get(e.picture_userId)
           pictureMap.set(e.picture_id, {
             id: e.picture_id,
             name: e.picture_name,
@@ -260,11 +259,11 @@ export class PictureService {
               size: e.storage_size,
               objectName: e.storage_objectName,
               extName: e.storage_ext_name,
-              user: {
-                id: e.user_id,
-                username: e.user_username,
-                avatar: e.userAvatar_path,
-              },
+            },
+            user: {
+              id: user?.id,
+              username: user?.username,
+              avatar: user?.avatar?.path,
             },
             categories: [],
             favoriteUsers: [],
@@ -287,7 +286,7 @@ export class PictureService {
     }
 
     return {
-      items: formatResult(items) as any,
+      items: formatResult(items, users) as any,
       ...rest,
     }
   }

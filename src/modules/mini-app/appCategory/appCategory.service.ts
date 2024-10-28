@@ -23,4 +23,8 @@ export class AppCategoryService {
     }
     return category
   }
+
+  async getUserPictureCategories(userId: number): Promise<CategoryEntity[]> {
+    return this.categoryService.getUserPictureCategories(userId)
+  }
 }

@@ -1,5 +1,4 @@
 import { Injectable, NotFoundException } from '@nestjs/common'
-import { IsBaseEnum } from '~/modules/appManage/category/category.entity'
 import { AuditStatus } from '~/modules/appManage/creatorAudit/creatorAudit.enum'
 import { PicturePageDto } from '~/modules/appManage/picture/dto/picture-page.dto'
 import { PictureService } from '~/modules/appManage/picture/picture.service'
@@ -12,7 +11,6 @@ export class AppPictureService {
     pageDto = {
       ...pageDto,
       auditStatus: AuditStatus.APPROVED,
-      isBase: IsBaseEnum.YES,
     }
 
     return this.pictureService.list(pageDto, user, true)

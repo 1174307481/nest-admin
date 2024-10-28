@@ -15,8 +15,8 @@ export class PicturePageDto {
 
   @ApiProperty({ description: '分类ID', required: false })
   @IsOptional()
-  @IsNumber()
-  categoryId?: number
+  @IsArray()
+  categoryIds?: number[]
 
   @ApiProperty({ description: '名称', required: false })
   @IsOptional()
