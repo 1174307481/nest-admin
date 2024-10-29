@@ -1,11 +1,9 @@
-import { Column, CreateDateColumn, Entity, JoinTable, ManyToMany, PrimaryGeneratedColumn, UpdateDateColumn } from 'typeorm'
+import { Column, Entity, JoinTable, ManyToMany } from 'typeorm'
+import { CompleteEntity } from '~/common/entity/common.entity'
 import { Storage } from '~/modules/tools/storage/storage.entity'
 
 @Entity('app_feedback')
-export class Feedback {
-  @PrimaryGeneratedColumn()
-  id: number
-
+export class Feedback extends CompleteEntity {
   @Column()
   title: string
 
@@ -15,10 +13,4 @@ export class Feedback {
   @ManyToMany(() => Storage)
   @JoinTable()
   screenshots: Storage[]
-
-  @CreateDateColumn()
-  createdAt: Date
-
-  @UpdateDateColumn()
-  updatedAt: Date
 }

@@ -26,7 +26,7 @@ export class AppCategoryController {
     return this.appCategoryService.getCategoryDetail(id)
   }
 
-  @Get('user/:userId/picture-categories')
+  @Get('picture-categories/user/:userId')
   @Public()
   @ApiOperation({ summary: '获取用户图片中的所有分类' })
   async getUserPictureCategories(@Param('userId') userId: number) {

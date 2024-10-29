@@ -90,4 +90,26 @@ export class AppUserService {
 
     return this.userRepository.save(user)
   }
+
+  async getOwnUserInfo(userId: number): Promise<UserEntity> {
+    const user = await this.userRepository.findOne({
+      where: { id: userId },
+      select: ['id', 'username', 'nickname', 'email', 'phone', 'avatar'], // 获取完整信息
+    })
+    if (!user) {
+      throw new NotFoundException('User not found')
+    }
+    return user
+  }
+
+  async getOtherUserInfo(userId: number): Promise<Partial<UserEntity>> {
+    const user = await this.userRepository.findOne({
+      where: { id: userId },
+      select: ['id', 'username', 'nickname', 'avatar'], // 获取部分信息
+    })
+    if (!user) {
+      throw new NotFoundException('User not found')
+    }
+    return user
+  }
 }

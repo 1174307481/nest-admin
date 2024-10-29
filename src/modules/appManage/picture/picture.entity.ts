@@ -7,7 +7,7 @@ import {
   ManyToMany,
   ManyToOne,
 } from 'typeorm'
-import { CommonEntity } from '~/common/entity/common.entity'
+import { CompleteEntity } from '~/common/entity/common.entity'
 import { Storage } from '~/modules/tools/storage/storage.entity'
 import { UserEntity } from '~/modules/user/user.entity'
 import { CategoryEntity } from '../../appManage/category/category.entity'
@@ -17,7 +17,7 @@ export enum IsBaseEnum {
   YES = 1,
 }
 @Entity('app_picture')
-export class Picture extends CommonEntity {
+export class Picture extends CompleteEntity {
   @Column()
   name: string
 

@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Put, UseGuards } from '@nestjs/common'
+import { Body, Controller, Get, Param, Put, UseGuards } from '@nestjs/common'
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger'
 import { AuthUser } from '~/modules/auth/decorators/auth-user.decorator'
 import {
@@ -36,5 +36,19 @@ export class AppUserController {
     @Body() updateData: Partial<UserEntity>,
   ) {
     return this.appUserService.updateUserInfo(user.id, updateData)
+  }
+
+  @Get('own-info')
+  @ApiOperation({ summary: '获取自己的用户信息' })
+  @Perm(permissions.READ)
+  async getOwnUserInfo(@AuthUser() user: UserEntity) {
+    return this.appUserService.getOwnUserInfo(user.id)
+  }
+
+  @Get('other-info/:id')
+  @ApiOperation({ summary: '获取其他用户信息' })
+  @Perm(permissions.READ)
+  async getOtherUserInfo(@Param('id') userId: number) {
+    return this.appUserService.getOtherUserInfo(userId)
   }
 }
