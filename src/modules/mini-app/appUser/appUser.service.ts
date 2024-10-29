@@ -66,7 +66,8 @@ export class AppUserService {
   async getUserInfo(userId: number): Promise<UserEntity> {
     const user = await this.userRepository.findOne({
       where: { id: userId },
-      select: ['id', 'username', 'nickname', 'email', 'phone', 'avatar'], // 选择需要返回的字段
+      select: ['id', 'username', 'nickname', 'email', 'phone'],
+      relations: ['avatar'],
     })
     if (!user) {
       throw new NotFoundException('User not found')
@@ -74,7 +75,10 @@ export class AppUserService {
     return user
   }
 
-  async updateUserInfo(userId: number, updateData: Partial<UserEntity>): Promise<UserEntity> {
+  async updateUserInfo(
+    userId: number,
+    updateData: Partial<UserEntity>,
+  ): Promise<UserEntity> {
     const user = await this.userRepository.findOneBy({ id: userId })
     if (!user) {
       throw new NotFoundException('User not found')
@@ -94,7 +98,8 @@ export class AppUserService {
   async getOwnUserInfo(userId: number): Promise<UserEntity> {
     const user = await this.userRepository.findOne({
       where: { id: userId },
-      select: ['id', 'username', 'nickname', 'email', 'phone', 'avatar'], // 获取完整信息
+      select: ['id', 'username', 'nickname', 'email', 'phone'],
+      relations: ['avatar'],
     })
     if (!user) {
       throw new NotFoundException('User not found')
@@ -105,7 +110,8 @@ export class AppUserService {
   async getOtherUserInfo(userId: number): Promise<Partial<UserEntity>> {
     const user = await this.userRepository.findOne({
       where: { id: userId },
-      select: ['id', 'username', 'nickname', 'avatar'], // 获取部分信息
+      select: ['id', 'username', 'nickname'],
+      relations: ['avatar'],
     })
     if (!user) {
       throw new NotFoundException('User not found')

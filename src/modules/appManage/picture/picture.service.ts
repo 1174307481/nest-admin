@@ -48,13 +48,18 @@ export class PictureService {
       throw new Error('文件不存在')
     }
 
-    const categories = await this.categoryRepository.findBy({
-      id: In(createPictureDto.categoryIds),
-    })
-    console.log('categories', categories)
+    // 判断有没有分类
 
-    if (categories.length !== createPictureDto.categoryIds?.length) {
-      throw new Error('部分分类不存在')
+    let categories = []
+    if (createPictureDto.categoryIds) {
+      categories = await this.categoryRepository.findBy({
+        id: In(createPictureDto.categoryIds),
+      })
+      console.log('categories', categories)
+
+      if (categories.length !== createPictureDto.categoryIds?.length) {
+        throw new Error('部分分类不存在')
+      }
     }
 
     const isAdmin = user.roles.includes(Roles.ADMIN)
@@ -100,15 +105,16 @@ export class PictureService {
       picture.storage = storage
     }
 
+    let categories = []
     if (updatePictureDto.categoryIds) {
-      const categories = await this.categoryRepository.findByIds(
+      categories = await this.categoryRepository.findByIds(
         updatePictureDto.categoryIds,
       )
       if (categories.length !== updatePictureDto.categoryIds.length) {
         throw new Error('部分分类不存在')
       }
-      picture.categories = categories
     }
+    picture.categories = categories
 
     if (updatePictureDto.description !== undefined) {
       picture.description = updatePictureDto.description
@@ -204,7 +210,36 @@ export class PictureService {
     }
 
     if (categoryIds) {
-      queryBuilder.andWhere('category.id IN (:...categoryIds)', { categoryIds })
+      if (categoryIds.includes(0)) {
+        // 如果包含0，需要查询没有分类的图片和指定分类的图片
+        const nonZeroIds = categoryIds.filter(id => id !== 0)
+        if (nonZeroIds.length > 0) {
+          queryBuilder.andWhere(
+            `(category.id IN (:...nonZeroIds) OR picture.id IN (
+              SELECT DISTINCT p.id FROM app_picture p
+              LEFT JOIN app_picture_categories_app_category pc ON p.id = pc.appPictureId
+              WHERE pc.appCategoryId IS NULL
+            ))`,
+            { nonZeroIds },
+          )
+        }
+        else {
+          // 如果只有0，则只查询没有分类的图片
+          queryBuilder.andWhere(
+            `picture.id IN (
+              SELECT DISTINCT p.id FROM app_picture p
+              LEFT JOIN app_picture_categories_app_category pc ON p.id = pc.appPictureId
+              WHERE pc.appCategoryId IS NULL
+            )`,
+          )
+        }
+      }
+      else {
+        // 原有逻辑：只查询指定分类的图片
+        queryBuilder.andWhere('category.id IN (:...categoryIds)', {
+          categoryIds,
+        })
+      }
     }
 
     if (name) {
@@ -234,7 +269,10 @@ export class PictureService {
     })
 
     const userIds = items.map((item: any) => item.picture_userId)
-    const users = await this.userRepository.findByIds(userIds)
+    const users = await this.userRepository.find({
+      where: { id: In(userIds) },
+      relations: ['avatar'],
+    })
 
     function formatResult(result: any[], users: UserEntity[]) {
       const pictureMap = new Map()

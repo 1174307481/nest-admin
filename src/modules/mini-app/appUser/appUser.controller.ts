@@ -1,10 +1,18 @@
-import { Body, Controller, Get, Param, Put, UseGuards } from '@nestjs/common'
+import {
+  Body,
+  Controller,
+  Get,
+  Put,
+  Query,
+  UseGuards,
+} from '@nestjs/common'
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger'
 import { AuthUser } from '~/modules/auth/decorators/auth-user.decorator'
 import {
   definePermission,
   Perm,
 } from '~/modules/auth/decorators/permission.decorator'
+import { Public } from '~/modules/auth/decorators/public.decorator'
 import { JwtAuthGuard } from '~/modules/auth/guards/jwt-auth.guard'
 import { UserEntity } from '~/modules/user/user.entity'
 import { AppUserService } from './appUser.service'
@@ -15,7 +23,7 @@ export const permissions = definePermission('app:user', {
 } as const)
 
 @ApiTags('App - User')
-@Controller('appUuser')
+@Controller('appUser')
 @UseGuards(JwtAuthGuard)
 @ApiBearerAuth()
 export class AppUserController {
@@ -45,10 +53,10 @@ export class AppUserController {
     return this.appUserService.getOwnUserInfo(user.id)
   }
 
-  @Get('other-info/:id')
+  @Get('other-info')
   @ApiOperation({ summary: '获取其他用户信息' })
-  @Perm(permissions.READ)
-  async getOtherUserInfo(@Param('id') userId: number) {
-    return this.appUserService.getOtherUserInfo(userId)
+  @Public()
+  async getOtherUserInfo(@Query() query: { userId: number }) {
+    return this.appUserService.getOtherUserInfo(query.userId)
   }
 }

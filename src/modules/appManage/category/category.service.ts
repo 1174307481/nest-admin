@@ -116,21 +116,30 @@ export class CategoryService {
   }
 
   async getUserPictureCategories(userId: number): Promise<CategoryEntity[]> {
-    // 查找用户收藏的所有图片
-    const pictures = await this.pictureRepository.find({
-      where: { userId },
-      relations: ['categories'],
-    })
+    // 使用子查询找出用户的图片所关联的分类
+    const categories = await this.categoryRepository
+      .createQueryBuilder('category')
+      .leftJoinAndSelect('category.avatar', 'avatar')
+      .where((qb) => {
+        const subQuery = qb
+          .subQuery()
+          .select('pc.appCategoryId')
+          .from('app_picture_categories_app_category', 'pc')
+          .innerJoin('app_picture', 'p', 'p.id = pc.appPictureId')
+          .where('p.userId = :userId')
+          .getQuery()
+        return `category.id IN ${subQuery}`
+      })
+      .setParameter('userId', userId)
+      .orderBy('category.orderNo', 'ASC')
+      .getMany()
 
-    // 使用Set来避免重复的分类
-    const categorySet = new Set<CategoryEntity>()
-    pictures.forEach((picture) => {
-      picture.categories.forEach(category => categorySet.add(category))
-    })
-
-    // 将“未分类”添加到集合的开头
+    // 创建未分类选项
     const uncategorized = new CategoryEntity()
+    uncategorized.id = 0
     uncategorized.name = '未分类'
-    return [uncategorized, ...Array.from(categorySet)]
+    uncategorized.orderNo = -1
+
+    return [uncategorized, ...categories]
   }
 }

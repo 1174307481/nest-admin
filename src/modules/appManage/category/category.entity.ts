@@ -1,7 +1,8 @@
 import { ApiProperty } from '@nestjs/swagger'
-import { Column, Entity, JoinColumn, OneToOne } from 'typeorm'
+import { Column, Entity, JoinColumn, ManyToMany, OneToOne } from 'typeorm'
 import { CompleteEntity } from '~/common/entity/common.entity'
 import { Storage } from '~/modules/tools/storage/storage.entity'
+import { Picture } from '../picture/picture.entity'
 
 export enum IsBaseEnum {
   NO = 0,
@@ -34,4 +35,7 @@ export class CategoryEntity extends CompleteEntity {
     default: 0,
   })
   isBase: number
+
+  @ManyToMany(() => Picture, picture => picture.categories)
+  pictures: Picture[]
 }
