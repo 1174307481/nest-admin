@@ -1,16 +1,16 @@
 version: '3'
 
 services:
-  nest-admin-web:
-    image: buqiyuan/vue3-antdv-admin:stable
-    container_name: nest-admin-web
-    volumes:
-      - ./deploy/web:/etc/nginx/conf.d
-    ports:
-      - '8090:8090'
-    restart: always
-    networks:
-      - nest_admin_net
+  # nest-admin-web:
+  #   image: buqiyuan/vue3-antdv-admin:stable
+  #   container_name: nest-admin-web
+  #   volumes:
+  #     - ./deploy/web:/etc/nginx/conf.d
+  #   ports:
+  #     - '8090:8090'
+  #   restart: always
+  #   networks:
+  #     - nest_admin_net
   mysql:
     image: mysql:latest
     container_name: nest-admin-mysql
@@ -48,30 +48,30 @@ services:
     networks:
       - nest_admin_net
 
-  nest-admin-server:
-    # build: 从当前路径构建镜像
-    build:
-      context: .
-      args:
-        - PROJECT_DIR=${PROJECT_DIR}
-    image: buqiyuan/nest-admin-server:stable
-    container_name: nest-admin-server
-    restart: always
-    env_file:
-      - .env
-      - .env.production
-    extra_hosts:
-      - 'host.docker.internal:host-gateway'
-    ports:
-      - '${APP_PORT}:${APP_PORT}'
-    volumes:
-      - ./logs/:${PROJECT_DIR}/logs/ # ./logs 日志文件挂载到容器外部
-    # 当前服务启动之前先要把depends_on指定的服务启动起来才行
-    depends_on:
-      - mysql
-      - redis
-    networks:
-      - nest_admin_net
+  # nest-admin-server:
+  #   # build: 从当前路径构建镜像
+  #   build:
+  #     context: .
+  #     args:
+  #       - PROJECT_DIR=${PROJECT_DIR}
+  #   image: buqiyuan/nest-admin-server:stable
+  #   container_name: nest-admin-server
+  #   restart: always
+  #   env_file:
+  #     - .env
+  #     - .env.production
+  #   extra_hosts:
+  #     - "host.docker.internal:host-gateway"
+  #   ports:
+  #     - "${APP_PORT}:${APP_PORT}"
+  #   volumes:
+  #     - ./logs/:${PROJECT_DIR}/logs/ # ./logs 日志文件挂载到容器外部
+  #   # 当前服务启动之前先要把depends_on指定的服务启动起来才行
+  #   depends_on:
+  #     - mysql
+  #     - redis
+  #   networks:
+  #     - nest_admin_net
 
 networks:
   nest_admin_net:
