@@ -7,7 +7,7 @@ services:
     volumes:
       - ./deploy/web:/etc/nginx/conf.d
     ports:
-      - '8100:80'
+      - '8090:8090'
     restart: always
     networks:
       - nest_admin_net
