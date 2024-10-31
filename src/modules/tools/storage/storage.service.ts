@@ -51,7 +51,7 @@ export class StorageService {
       deleteFile(item.path)
 
       // 删除MinIO中的文件
-      const bucketName = 'wallpaper' // 假设所有文件都在同一个bucket中
+      const bucketName = this.minioService.getBucketName() // 从配置文件获取bucketName
       const objectName = item.objectName // 使用objectName来删除文件
       if (objectName) {
         await this.minioService.deleteImage(bucketName, objectName)

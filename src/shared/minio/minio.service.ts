@@ -1,3 +1,4 @@
+import * as https from 'node:https'
 import { Injectable } from '@nestjs/common'
 import { ConfigService } from '@nestjs/config'
 import { Client } from 'minio'
@@ -9,12 +10,17 @@ export class MinioService {
 
   constructor(private configService: ConfigService) {
     const minioConfig = this.configService.get<IMinioConfig>('minio')
+    const isProduction = process.env.NODE_ENV === 'production'
+    const agent = new https.Agent({
+      rejectUnauthorized: isProduction,
+    })
     this.minioClient = new Client({
       endPoint: minioConfig.endPoint,
       port: minioConfig.port,
       useSSL: minioConfig.useSSL,
       accessKey: minioConfig.accessKey,
       secretKey: minioConfig.secretKey,
+      transportAgent: agent,
     })
   }
 
@@ -43,5 +49,10 @@ export class MinioService {
       console.error('Error deleting image from MinIO:', err)
       throw err
     }
+  }
+
+  getBucketName(): string {
+    const minioConfig = this.configService.get<IMinioConfig>('minio')
+    return minioConfig.bucketName
   }
 }

@@ -9,6 +9,7 @@ export const MinioConfig = registerAs(minioRegToken, () => ({
   useSSL: env('MINIO_USE_SSL') === 'true',
   accessKey: env('MINIO_ACCESS_KEY'),
   secretKey: env('MINIO_SECRET_KEY'),
+  bucketName: env('MINIO_BUCKET_NAME'),
 }))
 
 export type IMinioConfig = ConfigType<typeof MinioConfig>

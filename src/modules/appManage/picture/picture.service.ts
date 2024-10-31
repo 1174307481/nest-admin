@@ -95,6 +95,8 @@ export class PictureService {
       throw new Error('图片不存在')
     }
 
+    // 保存久storage
+    const oldStorage: Storage = picture.storage
     if (updatePictureDto.storageId) {
       const storage = await this.storageRepository.findOne({
         where: { id: updatePictureDto.storageId },
@@ -119,14 +121,16 @@ export class PictureService {
     if (updatePictureDto.description !== undefined) {
       picture.description = updatePictureDto.description
     }
-    console.log(updatePictureDto)
 
     if (updatePictureDto.isBase !== undefined) {
       picture.isBase = updatePictureDto.isBase ? IsBaseEnum.YES : IsBaseEnum.NO
     }
-    console.log(picture)
 
-    return await this.pictureRepository.save(picture)
+    const result = await this.pictureRepository.save(picture)
+    if (oldStorage) {
+      await this.storageRepository.delete(oldStorage.id)
+    }
+    return result
   }
 
   async delete(ids: number[], user: IAuthUser): Promise<void> {

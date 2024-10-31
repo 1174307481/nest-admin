@@ -104,8 +104,6 @@ export class PictureController {
   @Perm(permissions.LIST)
   @ApiOperation({ summary: '获取图片列表（分页）' })
   async list(@Body() pageDto: PicturePageDto, @AuthUser() user: IAuthUser) {
-    console.log('pageDto', pageDto)
-
     return this.pictureService.list(pageDto, user)
   }
 
