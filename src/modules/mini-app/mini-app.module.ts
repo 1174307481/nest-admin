@@ -17,6 +17,7 @@ const modules = [
   AppCategoryModule,
   AppFeedbackModule,
   AppBannerModule,
+  AppCommonModule,
 ]
 
 @Module({
